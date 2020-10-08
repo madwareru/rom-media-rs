@@ -166,7 +166,7 @@ impl SoundMixer {
         SoundMixer { driver, uid: 0 }
     }
 
-    fn play(&mut self, playback_builder: PlaybackBuilder) -> Option<SoundId> {
+    pub fn play(&mut self, playback_builder: PlaybackBuilder) -> Option<SoundId> {
         if playback_builder.sound.is_none() {
             None
         } else {
