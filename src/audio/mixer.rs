@@ -162,7 +162,7 @@ impl SoundMixer {
         SoundMixer { driver, uid: 0 }
     }
 
-    pub fn play_back_builder() -> PlaybackBuilder {
+    pub fn playback_builder() -> PlaybackBuilder {
         PlaybackBuilder::new()
     }
 
