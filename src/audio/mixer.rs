@@ -132,7 +132,7 @@ impl PlaybackBuilder {
             ..self
         }
     }
-    fn play(self, mixer: &mut SoundMixer, sound: Sound) -> SoundId {
+    pub fn play(self, mixer: &mut SoundMixer, sound: Sound) -> SoundId {
         mixer.play_builder(sound, self)
     }
 }
