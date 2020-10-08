@@ -39,7 +39,7 @@ pub struct Sound {
 impl From<&WavContent> for Sound {
     fn from(content: &WavContent) -> Self {
         let samples = content.data.iter()
-            .map(|sample| (*sample as f32 * 2.0) / std::u16::MAX as f32 - 1.0)
+            .map(|sample| *sample as f32 / std::u16::MAX as f32 - 0.5)
             .collect();
         Self {
             sample_rate: content.fmt.sampling_rate as f32,
