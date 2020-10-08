@@ -4,8 +4,7 @@ use rom_loaders_rs::multimedia::WavContent;
 use std::io::Cursor;
 
 pub(crate) enum MixerMessage {
-    Play(SoundId, Sound),
-    PlayExt(SoundId, Sound, Volume),
+    Play(SoundId, Sound, Volume),
     SetVolume(SoundId, Volume),
     SetVolumeSelf(Volume),
     Stop(SoundId),
@@ -117,6 +116,27 @@ pub struct SoundMixer {
     uid: usize
 }
 
+pub struct PlaybackBuilder {
+
+    volume: Volume
+}
+impl PlaybackBuilder {
+    fn new() -> Self {
+        Self {
+            volume: Volume(1.0)
+        }
+    }
+    fn with_volume(self, volume: Volume) -> Self {
+        Self {
+            volume,
+            ..self
+        }
+    }
+    fn play(self, mixer: &mut SoundMixer, sound: Sound) -> SoundId {
+        mixer.play_builder(sound, self)
+    }
+}
+
 impl SoundMixer {
     pub fn new() -> SoundMixer {
         let mut driver = SoundDriver::new(Box::new(MixerInternal {
@@ -142,14 +162,14 @@ impl SoundMixer {
         SoundMixer { driver, uid: 0 }
     }
 
-    pub fn play(&mut self, sound: Sound) -> SoundId {
-        self.play_ext(sound, Volume(1.0))
+    pub fn play_back_builder() -> PlaybackBuilder {
+        PlaybackBuilder::new()
     }
 
-    pub fn play_ext(&mut self, sound: Sound, volume: Volume) -> SoundId {
+    fn play_builder(&mut self, sound: Sound, playback_builder: PlaybackBuilder) -> SoundId {
         let sound_id = SoundId(self.uid);
         self.uid += 1;
-        self.driver.send_event(MixerMessage::PlayExt(sound_id, sound, volume));
+        self.driver.send_event(MixerMessage::Play(sound_id, sound, playback_builder.volume));
         sound_id
     }
 
@@ -177,21 +197,7 @@ impl MixerInternal {
 
     pub(crate) fn handle_event(&mut self, evt: MixerMessage) {
         match evt {
-            MixerMessage::Play(id, sound) => {
-                let sample_rate_correction = sound.get_sample_rate_correction();
-                self.sounds.insert(
-                    id,
-                    SoundInternal {
-                        data: sound,
-                        progress: 0,
-                        volume: Volume(1.0),
-                        ear: EarState::Left,
-                        sample_rate_correction,
-                        ticks: sample_rate_correction.ticks_pre_increment
-                    },
-                );
-            },
-            MixerMessage::PlayExt(id, sound, volume) => {
+            MixerMessage::Play(id, sound, volume) => {
                 assert!(volume.0 <= 1.0);
                 let sample_rate_correction = sound.get_sample_rate_correction();
                 self.sounds.insert(
