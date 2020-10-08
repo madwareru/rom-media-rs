@@ -3,7 +3,7 @@ use rom_loaders_rs::multimedia::WavContent;
 
 pub mod mixer;
 mod sound_driver;
-pub use mixer::{SoundMixer, Sound, SoundId};
+pub use mixer::{SoundMixer, Sound, SoundId, PlaybackBuilder};
 
 #[derive(Debug, Clone, Copy)]
 /// error produced when creating the [`SoundDriver`]
