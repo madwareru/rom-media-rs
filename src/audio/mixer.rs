@@ -117,23 +117,27 @@ pub struct SoundMixer {
 }
 
 pub struct PlaybackBuilder {
-
+    sound: Option<Sound>,
     volume: Volume
 }
 impl PlaybackBuilder {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
+            sound: None,
             volume: Volume(1.0)
         }
     }
-    fn with_volume(self, volume: Volume) -> Self {
+    pub fn with_volume(self, volume: Volume) -> Self {
         Self {
             volume,
             ..self
         }
     }
-    pub fn play(self, mixer: &mut SoundMixer, sound: Sound) -> SoundId {
-        mixer.play_builder(sound, self)
+    pub fn with_sound(self, sound: Sound) -> Self {
+        Self {
+            sound: Some(sound),
+            ..self
+        }
     }
 }
 
@@ -162,15 +166,15 @@ impl SoundMixer {
         SoundMixer { driver, uid: 0 }
     }
 
-    pub fn playback_builder(&self) -> PlaybackBuilder {
-        PlaybackBuilder::new()
-    }
-
-    fn play_builder(&mut self, sound: Sound, playback_builder: PlaybackBuilder) -> SoundId {
-        let sound_id = SoundId(self.uid);
-        self.uid += 1;
-        self.driver.send_event(MixerMessage::Play(sound_id, sound, playback_builder.volume));
-        sound_id
+    fn play(&mut self, playback_builder: PlaybackBuilder) -> Option<SoundId> {
+        if playback_builder.sound.is_none() {
+            None
+        } else {
+            let sound_id = SoundId(self.uid);
+            self.uid += 1;
+            self.driver.send_event(MixerMessage::Play(sound_id, playback_builder.sound.unwrap(), playback_builder.volume));
+            Some(sound_id)
+        }
     }
 
     pub fn set_volume(&mut self, sound_id: SoundId, volume: Volume) {
