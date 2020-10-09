@@ -58,7 +58,11 @@ impl SoundDriver {
         };
 
         output_format.channels = 2;
-        output_format.sample_rate = SampleRate(44100);
+        #[cfg(not(target_os = "windows"))]
+        {
+            //on windows this leads to fail somehow :(
+            output_format.sample_rate = SampleRate(44100);
+        }
 
         let stream_id = match event_loop.build_output_stream(&device, &output_format) {
             Ok(output_stream) => output_stream,
