@@ -2,9 +2,10 @@ use std::sync::mpsc::{Sender, channel};
 use super::SoundError;
 use super::mixer::MixerMessage;
 use cpal::traits::{HostTrait, DeviceTrait, EventLoopTrait};
-use cpal::SampleRate;
+use cpal::{SampleRate, SupportedFormatsError, SupportedOutputFormats, SampleFormat};
 use std::thread;
 use crate::audio::mixer::{SoundMixer, MixerInternal};
+use cpal::UnknownTypeOutputBuffer::F32;
 
 pub struct SoundDriver {
     event_loop: Option<cpal::EventLoop>,
@@ -56,12 +57,35 @@ impl SoundDriver {
                 };
             }
         };
+        match device.supported_output_formats() {
+            Ok(available_formats) => {
+                for available_format in available_formats {
+                    if available_format.channels != 2 { continue; }
+                    if available_format.data_type != SampleFormat::F32 { continue; }
+                    if available_format.min_sample_rate.0 > 44100 { continue; }
+                    if available_format.max_sample_rate.0 < 44100 { continue; }
+                    output_format.channels = 2;
+                    output_format.data_type = SampleFormat::F32;
+                    #[cfg(not(target_os = "windows"))]
+                    {
+                        //on windows this leads to fail somehow :(
+                        output_format.sample_rate = SampleRate(44100);
+                    }
+                }
+            }
+            Err(err) => {
+                println!("error : could not get supported formats : {:?}\n", err);
+            }
+        };
 
-        output_format.channels = 2;
-        #[cfg(not(target_os = "windows"))]
-        {
-            //on windows this leads to fail somehow :(
-            output_format.sample_rate = SampleRate(44100);
+
+        println!(
+            "sound device : {} format {:?}\n",
+            device.name().unwrap_or("no device name".into()),
+            &output_format
+        );
+        if output_format.sample_rate.0 != 44100 {
+            println!("Caution! Output format sample rate is not 44100!");
         }
 
         let stream_id = match event_loop.build_output_stream(&device, &output_format) {
@@ -78,12 +102,6 @@ impl SoundDriver {
                 };
             }
         };
-
-        println!(
-            "sound device : {} format {:?}\n",
-            device.name().unwrap_or("no device name".into()),
-            &output_format
-        );
 
         Self {
             event_loop: Some(event_loop),
