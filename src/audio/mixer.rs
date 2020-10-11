@@ -6,6 +6,7 @@ use std::io::Cursor;
 pub(crate) enum MixerMessage {
     Play(SoundId, Sound, Volume),
     SetVolume(SoundId, Volume),
+    StreamContent(SoundId, Vec<f32>),
     SetVolumeSelf(Volume),
     Stop(SoundId),
 }
@@ -16,10 +17,11 @@ pub struct SoundId(usize);
 #[derive(Clone, Copy, Debug)]
 pub struct Volume(pub f32);
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum PlaybackStyle {
     Once,
-    Looped
+    Looped,
+    Streamed
 }
 
 #[derive(Copy, Clone)]
@@ -177,6 +179,10 @@ impl SoundMixer {
         }
     }
 
+    pub fn stream_sound(&mut self, sound_id: SoundId, content: Vec<f32>) {
+        self.driver.send_event(MixerMessage::StreamContent(sound_id, content))
+    }
+
     pub fn set_volume(&mut self, sound_id: SoundId, volume: Volume) {
         self.driver.send_event(MixerMessage::SetVolume(sound_id, volume));
     }
@@ -216,6 +222,12 @@ impl MixerInternal {
                     },
                 );
             },
+            MixerMessage::StreamContent(id, content) => {
+                if let Some(sound) = self.sounds.get_mut(&id) {
+                    assert_eq!(sound.data.playback_style, PlaybackStyle::Streamed);
+                    sound.data.samples.extend(content);
+                }
+            }
             MixerMessage::SetVolume(id, volume) => {
                 if let Some(sound) = self.sounds.get_mut(&id) {
                     assert!(volume.0 <= 1.0);
@@ -228,6 +240,7 @@ impl MixerInternal {
             MixerMessage::Stop(id) => {
                 self.sounds.remove(&id);
             },
+
             _ => unreachable!() //it's nice to fail when we added some new event and didn't handle it properly here
         }
     }
@@ -248,6 +261,9 @@ impl MixerInternal {
                     }
                     PlaybackStyle::Looped => {
                         sound.progress = 0;
+                    }
+                    PlaybackStyle::Streamed => {
+                        continue;
                     }
                 }
             }

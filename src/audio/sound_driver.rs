@@ -66,18 +66,13 @@ impl SoundDriver {
                     if available_format.max_sample_rate.0 < 44100 { continue; }
                     output_format.channels = 2;
                     output_format.data_type = SampleFormat::F32;
-                    #[cfg(not(target_os = "windows"))]
-                    {
-                        //on windows this leads to fail somehow :(
-                        output_format.sample_rate = SampleRate(44100);
-                    }
+                    output_format.sample_rate = SampleRate(44100);
                 }
             }
             Err(err) => {
                 println!("error : could not get supported formats : {:?}\n", err);
             }
         };
-
 
         println!(
             "sound device : {} format {:?}\n",
