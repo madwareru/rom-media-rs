@@ -36,6 +36,8 @@ impl SmackerPlayer {
         }
         self.state = PlayerState::Playing;
         println!("frame_interval: {}", self.smacker_file.file_info.frame_interval);
+        println!("delta: {}", self.delta);
+        println!("dt: {}", delta_time);
         if self.delta >= self.smacker_file.file_info.frame_interval {
             if self.frame < self.smacker_file.file_info.frames.len() {
                 self.smacker_file.unpack(self.frame, skip_video, skip_audio)?;
