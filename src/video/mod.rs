@@ -58,7 +58,7 @@ impl SmackerPlayer {
         buffer_width: usize
     ) {
         let mut offset = 0;
-        let mut buffer_offset = y * buffer_width;
+        let mut buffer_offset = x + y * buffer_width;
         let ctx = &self.smacker_file.file_info.smacker_decode_context;
         for _ in 0..self.smacker_file.file_info.height as usize {
             if buffer_offset >= buffer.len() {
