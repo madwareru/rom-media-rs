@@ -49,9 +49,8 @@ impl SmackerPlayer {
                 }
                 self.delta -= self.smacker_file.file_info.frame_interval;
             }
-            self.instant_timer = Instant::now();
         }
-        self.delta += self.instant_timer.elapsed().as_micros() as f32 / 1000.0;
+        self.delta += self.instant_timer.elapsed().as_millis() as f32;
         self.instant_timer = Instant::now();
         Ok(self.state)
     }
