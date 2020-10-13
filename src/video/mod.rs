@@ -12,6 +12,8 @@ pub enum PlayerState {
 
 pub struct SmackerPlayer {
     pub state: PlayerState,
+    pub frame_width: usize,
+    pub frame_height: usize,
     instant_timer: std::time::Instant,
     delta: f32,
     frame: usize,
@@ -26,6 +28,8 @@ impl SmackerPlayer {
             delta: smacker_file.file_info.frame_interval,
             frame: 0,
             state: PlayerState::Entry,
+            frame_width: smacker_file.file_info.width as usize,
+            frame_height: smacker_file.file_info.height as usize,
             smacker_file
         })
     }
