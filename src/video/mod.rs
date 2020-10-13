@@ -14,7 +14,6 @@ pub struct SmackerPlayer {
     pub state: PlayerState,
     pub frame_width: usize,
     pub frame_height: usize,
-    instant_timer: std::time::Instant,
     delta: f32,
     frame: usize,
     smacker_file: SmackerFile
@@ -22,9 +21,7 @@ pub struct SmackerPlayer {
 impl SmackerPlayer {
     pub fn load_from_stream(stream: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
         let smacker_file = SmackerFile::load(stream)?;
-        let instant_timer = Instant::now();
         Ok(Self {
-            instant_timer,
             delta: smacker_file.file_info.frame_interval,
             frame: 0,
             state: PlayerState::Entry,
@@ -33,7 +30,7 @@ impl SmackerPlayer {
             smacker_file
         })
     }
-    pub fn frame(&mut self, skip_video: bool, skip_audio: bool) -> std::io::Result<PlayerState> {
+    pub fn frame(&mut self, delta_time: f32, skip_video: bool, skip_audio: bool) -> std::io::Result<PlayerState> {
         if self.state == PlayerState::FinishedPlaying {
             return Ok(self.state);
         }
@@ -48,8 +45,7 @@ impl SmackerPlayer {
             }
             self.delta -= self.smacker_file.file_info.frame_interval;
         }
-        self.delta += self.instant_timer.elapsed().as_millis() as f32;
-        self.instant_timer = Instant::now();
+        self.delta += delta_time as f32;
         Ok(self.state)
     }
     pub fn blit_picture(
