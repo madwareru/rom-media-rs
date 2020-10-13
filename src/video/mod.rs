@@ -62,12 +62,10 @@ impl SmackerPlayer {
                 break;
             }
             for i in 0..self.smacker_file.file_info.width as usize {
-                if i + x >= buffer_width {
-                    offset += 1;
-                    continue;
+                if i + x < buffer_width {
+                    let palette_index = ctx.image[offset] as usize;
+                    buffer[buffer_offset + i] = ctx.palette[palette_index];
                 }
-                let palette_index = ctx.image[offset] as usize;
-                buffer[buffer_offset + i] = ctx.palette[palette_index];
                 offset += 1;
             }
             buffer_offset += buffer_width;
