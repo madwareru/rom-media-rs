@@ -39,12 +39,15 @@ impl SmackerPlayer {
         }
         self.state = PlayerState::Playing;
         if self.delta >= self.smacker_file.file_info.frame_interval {
-            if self.frame < self.smacker_file.file_info.frames.len() {
-                self.smacker_file.unpack(self.frame, skip_video, skip_audio)?;
-                self.frame += 1;
-                self.state = PlayerState::RenderedNewFrame;
-            } else {
-                self.state = PlayerState::FinishedPlaying;
+            while self.delta >= self.smacker_file.file_info.frame_interval {
+                if self.frame < self.smacker_file.file_info.frames.len() {
+                    self.smacker_file.unpack(self.frame, skip_video, skip_audio)?;
+                    self.frame += 1;
+                    self.state = PlayerState::RenderedNewFrame;
+                } else {
+                    self.state = PlayerState::FinishedPlaying;
+                }
+                self.delta -= self.smacker_file.file_info.frame_interval;
             }
         }
         self.delta += self.instant_timer.elapsed().as_secs_f32() * 1000.0;
