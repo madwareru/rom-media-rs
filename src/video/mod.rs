@@ -47,9 +47,13 @@ impl SmackerPlayer {
                 self.state = PlayerState::FinishedPlaying;
             }
             self.delta -= self.smacker_file.file_info.frame_interval;
+            Ok(self.state)
         }
-        self.delta += delta_time as f32;
-        Ok(self.state)
+        else
+        {
+            self.delta += delta_time as f32;
+            Ok(self.state)
+        }
     }
     pub fn blit_picture(
         &self,

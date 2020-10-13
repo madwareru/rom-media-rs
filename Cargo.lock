@@ -258,7 +258,7 @@ dependencies = [
 
 [[package]]
 name = "rom-media-rs"
-version = "0.1.21"
+version = "0.1.22"
 dependencies = [
  "cpal",
  "rom-loaders-rs",
