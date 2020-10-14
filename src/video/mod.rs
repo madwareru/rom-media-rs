@@ -4,7 +4,8 @@ use std::time::Instant;
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum PlayerState {
-    Entry,
+    PreloadingAudio,
+    FinishedAudioPreload,
     Playing,
     RenderedNewFrame,
     FinishedPlaying
@@ -16,29 +17,40 @@ pub struct SmackerPlayer {
     pub frame_height: usize,
     delta: f32,
     frame: usize,
+    audio_frame: usize,
     smacker_file: SmackerFile
 }
 impl SmackerPlayer {
     pub fn load_from_stream(stream: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
         let smacker_file = SmackerFile::load(stream)?;
-        let mut result = Self {
+        Ok(Self {
             delta: 0.0,
             frame: 0,
-            state: PlayerState::Entry,
+            audio_frame: 0,
+            state: PlayerState::PreloadingAudio,
             frame_width: smacker_file.file_info.width as usize,
             frame_height: smacker_file.file_info.height as usize,
             smacker_file
-        };
-        for i in 0..result.smacker_file.file_info.frames.len() {
-            result.smacker_file.unpack(i, true, false)?;
-        }
-        Ok(result)
+        })
     }
     pub fn frame(&mut self, delta_time: f32) -> std::io::Result<PlayerState> {
-        self.delta += delta_time as f32;
         if self.state == PlayerState::FinishedPlaying {
             return Ok(self.state);
         }
+        if self.state == PlayerState::PreloadingAudio {
+            let next_bulk_frame = self.audio_frame + 32;
+            while self.audio_frame < self.smacker_file.file_info.frames.len() && self.audio_frame < next_bulk_frame {
+                self.smacker_file.unpack(self.audio_frame, true, false)?;
+                self.audio_frame += 1;
+            }
+            if self.audio_frame = self.smacker_file.file_info.frames.len() {
+                self.state = PlayerState::FinishedAudioPreload;
+            }
+            return Ok(self.state);
+        }
+
+        self.delta += delta_time as f32;
+
         self.state = PlayerState::Playing;
         while self.delta >= self.smacker_file.file_info.frame_interval {
             if self.frame < self.smacker_file.file_info.frames.len() {
