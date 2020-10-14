@@ -21,16 +21,20 @@ pub struct SmackerPlayer {
 impl SmackerPlayer {
     pub fn load_from_stream(stream: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
         let smacker_file = SmackerFile::load(stream)?;
-        Ok(Self {
+        let mut result = Self {
             delta: 0.0,
             frame: 0,
             state: PlayerState::Entry,
             frame_width: smacker_file.file_info.width as usize,
             frame_height: smacker_file.file_info.height as usize,
             smacker_file
-        })
+        };
+        for i in 0..result.smacker_file.file_info.frames.len() {
+            result.smacker_file.unpack(i, true, false)?;
+        }
+        Ok(result)
     }
-    pub fn frame(&mut self, delta_time: f32, skip_video: bool, skip_audio: bool) -> std::io::Result<PlayerState> {
+    pub fn frame(&mut self, delta_time: f32) -> std::io::Result<PlayerState> {
         self.delta += delta_time as f32;
         if self.state == PlayerState::FinishedPlaying {
             return Ok(self.state);
@@ -38,7 +42,7 @@ impl SmackerPlayer {
         self.state = PlayerState::Playing;
         while self.delta >= self.smacker_file.file_info.frame_interval {
             if self.frame < self.smacker_file.file_info.frames.len() {
-                self.smacker_file.unpack(self.frame, skip_video, skip_audio)?;
+                self.smacker_file.unpack(self.frame, false, true)?;
                 self.frame += 1;
                 self.state = PlayerState::RenderedNewFrame;
             } else {
