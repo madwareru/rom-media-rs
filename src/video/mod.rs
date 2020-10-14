@@ -111,7 +111,7 @@ impl SmackerPlayer {
                     let r = (r as u32 * self.brightness as u32) / 255;
                     let g = (g as u32 * self.brightness as u32) / 255;
                     let b = (b as u32 * self.brightness as u32) / 255;
-                    buffer[buffer_offset + i] = 0xFF_00_00_00 + b * 0x1_00_00 + g * 0x1_00 + r;
+                    buffer[buffer_offset + i] = 0xFF_00_00_00 + r * 0x1_00_00 + g * 0x1_00 + b;
                 }
                 offset += 1;
             }
