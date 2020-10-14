@@ -1,6 +1,8 @@
 use std::io::Cursor;
-use rom_loaders_rs::multimedia::SmackerFile;
+use rom_loaders_rs::multimedia::{SmackerFile, Audio};
 use std::time::Instant;
+use crate::audio::{SoundMixer, Sound, PlaybackBuilder};
+use crate::audio::mixer::PlaybackStyle;
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum PlayerState {
@@ -18,11 +20,13 @@ pub struct SmackerPlayer {
     delta: f32,
     frame: usize,
     audio_frame: usize,
-    smacker_file: SmackerFile
+    smacker_file: SmackerFile,
+    sound_mixer: SoundMixer
 }
 impl SmackerPlayer {
     pub fn load_from_stream(stream: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
         let smacker_file = SmackerFile::load(stream)?;
+        let sound_mixer = SoundMixer::new();
         Ok(Self {
             delta: 0.0,
             frame: 0,
@@ -30,7 +34,8 @@ impl SmackerPlayer {
             state: PlayerState::PreloadingAudio,
             frame_width: smacker_file.file_info.width as usize,
             frame_height: smacker_file.file_info.height as usize,
-            smacker_file
+            smacker_file,
+            sound_mixer
         })
     }
     pub fn frame(&mut self, delta_time: f32) -> std::io::Result<PlayerState> {
@@ -45,6 +50,22 @@ impl SmackerPlayer {
             }
             if self.audio_frame == self.smacker_file.file_info.frames.len() {
                 self.state = PlayerState::FinishedAudioPreload;
+                for i in 0..self.smacker_file.file_info.audio_flags.len() {
+                    if !self.smacker_file.file_info.audio_flags[i].contains(Audio::PRESENT) {
+                        continue;
+                    }
+                    let sound = Sound {
+                        sample_rate: self.smacker_file.file_info.audio_rate[i] as f32,
+                        channels: if self.smacker_file.file_info.audio_flags[i].contains(Audio::IS_STEREO) {
+                            2
+                        } else {
+                            1
+                        },
+                        samples: self.smacker_file.file_info.audio_tracks[i].clone(),
+                        playback_style: PlaybackStyle::Once
+                    };
+                    self.sound_mixer.play(PlaybackBuilder::new().with_sound(sound)).unwrap();
+                }
             }
             return Ok(self.state);
         }
