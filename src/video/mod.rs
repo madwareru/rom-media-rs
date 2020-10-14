@@ -43,7 +43,7 @@ impl SmackerPlayer {
             return Ok(self.state);
         }
         if self.state == PlayerState::PreloadingAudio {
-            let next_bulk_frame = self.audio_frame + 32;
+            let next_bulk_frame = self.audio_frame + 128;
             while self.audio_frame < self.smacker_file.file_info.frames.len() && self.audio_frame < next_bulk_frame {
                 self.smacker_file.unpack(self.audio_frame, true, false)?;
                 self.audio_frame += 1;
