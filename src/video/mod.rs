@@ -17,11 +17,14 @@ pub struct SmackerPlayer {
     pub state: PlayerState,
     pub frame_width: usize,
     pub frame_height: usize,
+    fade_in_frames: usize,
+    fade_out_frames: usize,
     delta: f32,
     frame: usize,
     audio_frame: usize,
     smacker_file: SmackerFile,
-    sound_mixer: SoundMixer
+    sound_mixer: SoundMixer,
+    brightness: u8
 }
 impl SmackerPlayer {
     pub fn load_from_stream(stream: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
@@ -30,12 +33,15 @@ impl SmackerPlayer {
         Ok(Self {
             delta: 0.0,
             frame: 0,
+            fade_in_frames: 0, // todo: implement fade in
+            fade_out_frames: 0, // todo: implement fade out
             audio_frame: 0,
             state: PlayerState::PreloadingAudio,
             frame_width: smacker_file.file_info.width as usize,
             frame_height: smacker_file.file_info.height as usize,
             smacker_file,
-            sound_mixer
+            sound_mixer,
+            brightness: 255
         })
     }
     pub fn frame(&mut self, delta_time: f32) -> std::io::Result<PlayerState> {
@@ -101,7 +107,11 @@ impl SmackerPlayer {
             for i in 0..self.smacker_file.file_info.width as usize {
                 if i + x < buffer_width {
                     let palette_index = ctx.image[offset] as usize;
-                    buffer[buffer_offset + i] = ctx.palette[palette_index];
+                    let (r, g, b) = ctx.palette[palette_index];
+                    let r = (r as u32 * self.brightness as u32) / 255;
+                    let g = (g as u32 * self.brightness as u32) / 255;
+                    let b = (b as u32 * self.brightness as u32) / 255;
+                    buffer[buffer_offset + i] = 0xFF_00_00_00 + b * 0x1_00_00 + g * 0x1_00 + r;
                 }
                 offset += 1;
             }
