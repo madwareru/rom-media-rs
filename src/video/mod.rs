@@ -12,7 +12,7 @@ pub enum PreloadingAudioState {
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum FadeInState {
-    InProgress { t: f32, step: f32 },
+    InProgress { t: f32, t_max: f32 },
     Complete
 }
 
@@ -25,7 +25,7 @@ pub enum RenderingFramesState {
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum FadeOutState {
-    InProgress { t: f32, step: f32 },
+    InProgress { t: f32, t_max: f32 },
     Complete
 }
 
@@ -42,8 +42,8 @@ pub struct SmackerPlayer {
     pub state: PlayerState,
     pub frame_width: usize,
     pub frame_height: usize,
-    fade_in_frames: usize,
-    fade_out_frames: usize,
+    fade_in_ms: usize,
+    fade_out_ms: usize,
     smacker_file: SmackerFile,
     sound_mixer: SoundMixer,
     brightness: u8
@@ -53,8 +53,8 @@ impl SmackerPlayer {
         let smacker_file = SmackerFile::load(stream)?;
         let sound_mixer = SoundMixer::new();
         Ok(Self {
-            fade_in_frames: 0,
-            fade_out_frames: 0,
+            fade_in_ms: 0,
+            fade_out_ms: 0,
             state: PlayerState::PreloadingAudio{
                 frame: 0,
                 state: PreloadingAudioState::InProgress
@@ -66,11 +66,11 @@ impl SmackerPlayer {
             brightness: 255
         })
     }
-    pub fn set_fade_in(&mut self, fade_in_frames: usize) {
-        self.fade_in_frames = fade_in_frames;
+    pub fn set_fade_in_ms(&mut self, fade_in_ms: usize) {
+        self.fade_in_ms = fade_in_ms;
     }
-    pub fn set_fade_out(&mut self, fade_out_frames: usize) {
-        self.fade_out_frames = fade_out_frames;
+    pub fn set_fade_out_ms(&mut self, fade_out_ms: usize) {
+        self.fade_out_ms = fade_out_ms;
     }
     pub fn frame(&mut self, delta_time: f32) -> std::io::Result<PlayerState> {
         match &mut self.state {
@@ -89,11 +89,10 @@ impl SmackerPlayer {
                 },
                 PreloadingAudioState::Complete => {
                     self.smacker_file.unpack(0, false, true)?;
-                    self.state = if self.fade_in_frames > 0 {
-                        let step = 1.0 / self.fade_in_frames as f32;
+                    self.state = if self.fade_in_ms > 0 {
                         PlayerState::FadeIn(FadeInState::InProgress {
                             t: 0.0,
-                            step
+                            t_max: self.fade_in_ms as f32
                         })
                     } else {
                         PlayerState::FadeIn(FadeInState::Complete)
@@ -102,12 +101,13 @@ impl SmackerPlayer {
                 },
             },
             PlayerState::FadeIn(state) => match state {
-                FadeInState::InProgress { t, step } => {
-                    if *t >= 1.0 {
+                FadeInState::InProgress { t, t_max } => {
+                    if *t >= *t_max {
                         *state = FadeInState::Complete;
                     } else {
-                        self.brightness = (*t * 255.0) as u8;
-                        *t += *step;
+                        let alpha = *t / *t_max;
+                        self.brightness = (alpha * 255.0) as u8;
+                        *t += delta_time;
                     }
                     Ok(self.state)
                 },
@@ -139,11 +139,10 @@ impl SmackerPlayer {
             },
             PlayerState::IsRendering { frame, delta, state } => {
                 if *state == RenderingFramesState::Complete {
-                    self.state = if self.fade_out_frames > 0 {
-                        let step = 1.0 / self.fade_out_frames as f32;
+                    self.state = if self.fade_out_ms > 0 {
                         PlayerState::FadeOut(FadeOutState::InProgress {
                             t: 0.0,
-                            step
+                            t_max: self.fade_out_ms as f32
                         })
                     } else {
                         PlayerState::FadeOut(FadeOutState::Complete)
@@ -168,12 +167,13 @@ impl SmackerPlayer {
                 Ok(self.state)
             },
             PlayerState::FadeOut(state) => match state {
-                FadeOutState::InProgress { t, step } => {
-                    if *t >= 1.0 {
+                FadeOutState::InProgress { t, t_max } => {
+                    if *t >= *t_max {
                         *state = FadeOutState::Complete;
                     } else {
-                        self.brightness = ((1.0 - *t) * 255.0) as u8;
-                        *t += *step;
+                        let alpha = *t / *t_max;
+                        self.brightness = ((1.0 - alpha) * 255.0) as u8;
+                        *t += delta_time;
                     }
                     Ok(self.state)
                 },
@@ -200,12 +200,20 @@ impl SmackerPlayer {
             }
             for i in 0..self.smacker_file.file_info.width as usize {
                 if i + x < buffer_width {
-                    let palette_index = ctx.image[offset] as usize;
-                    let (r, g, b) = ctx.palette[palette_index];
-                    let r = (r as u32 * self.brightness as u32) / 255;
-                    let g = (g as u32 * self.brightness as u32) / 255;
-                    let b = (b as u32 * self.brightness as u32) / 255;
-                    buffer[buffer_offset + i] = 0xFF_00_00_00 + r * 0x1_00_00 + g * 0x1_00 + b;
+                    buffer[buffer_offset + i] = 0xFF_00_00_00;
+                    if self.brightness > 0 {
+                        let palette_index = ctx.image[offset] as usize;
+                        let clr = ctx.palette[palette_index];
+                        let (r, g, b) = (clr.0 as u32, clr.1 as u32, clr.2 as u32);
+                        buffer[buffer_offset + i] += if self.brightness == 255 {
+                            r * 0x1_00_00 + g * 0x1_00 + b
+                        } else {
+                            let r = (r * self.brightness as u32) / 255;
+                            let g = (g * self.brightness as u32) / 255;
+                            let b = (b * self.brightness as u32) / 255;
+                            r * 0x1_00_00 + g * 0x1_00 + b
+                        }
+                    }
                 }
                 offset += 1;
             }
