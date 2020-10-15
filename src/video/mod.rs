@@ -16,6 +16,7 @@ pub enum FadeInState {
     Complete
 }
 
+#[derive(Copy, Clone, PartialEq)]
 pub enum RenderingFramesState {
     InProgress,
     RenderedNewFrame,
@@ -76,9 +77,9 @@ impl SmackerPlayer {
             PlayerState::FinishedPlaying => Ok(self.state),
             PlayerState::PreloadingAudio { frame, state }  => match state {
                 PreloadingAudioState::InProgress => {
-                    let next_bulk_frame = frame + 256;
-                    while *frame < self.smacker_file.file_info.frames.len() && frame < next_bulk_frame {
-                        self.smacker_file.unpack(*frame, true, frame == 0)?;
+                    let next_bulk_frame = *frame + 256;
+                    while *frame < self.smacker_file.file_info.frames.len() && *frame < next_bulk_frame {
+                        self.smacker_file.unpack(*frame, true, *frame == 0)?;
                         *frame += 1;
                     }
                     if *frame == self.smacker_file.file_info.frames.len() {
@@ -104,7 +105,7 @@ impl SmackerPlayer {
                     if *t >= 1.0 {
                         *state = FadeInState::Complete;
                     } else {
-                        self.brightness = (t * 255.0) as u8;
+                        self.brightness = (*t * 255.0) as u8;
                         *t += *step;
                     }
                     Ok(self.state)
@@ -146,7 +147,7 @@ impl SmackerPlayer {
                     } else {
                         PlayerState::FadeOut(FadeOutState::Complete)
                     };
-                    Ok(self.state)
+                    return Ok(self.state);
                 }
                 *delta += delta_time;
                 *state = if *frame == self.smacker_file.file_info.frames.len() {
