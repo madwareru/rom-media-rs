@@ -79,7 +79,7 @@ impl SmackerPlayer {
                 PreloadingAudioState::InProgress => {
                     let next_bulk_frame = *frame + 256;
                     while *frame < self.smacker_file.file_info.frames.len() && *frame < next_bulk_frame {
-                        self.smacker_file.unpack(*frame, true, *frame == 0)?;
+                        self.smacker_file.unpack(*frame, true, false)?;
                         *frame += 1;
                     }
                     if *frame == self.smacker_file.file_info.frames.len() {
@@ -88,6 +88,7 @@ impl SmackerPlayer {
                     Ok(self.state)
                 },
                 PreloadingAudioState::Complete => {
+                    self.smacker_file.unpack(0, false, true)?;
                     self.state = if self.fade_in_frames > 0 {
                         let step = 1.0 / self.fade_in_frames as f32;
                         PlayerState::FadeIn(FadeInState::InProgress {
