@@ -106,6 +106,7 @@ impl SmackerPlayer {
                         *state = FadeInState::Complete;
                     } else {
                         let alpha = *t / *t_max;
+                        let alpha = alpha * alpha;
                         self.brightness = (alpha * 255.0) as u8;
                         *t += delta_time;
                     }
@@ -172,6 +173,7 @@ impl SmackerPlayer {
                         *state = FadeOutState::Complete;
                     } else {
                         let alpha = *t / *t_max;
+                        let alpha = alpha * alpha;
                         self.brightness = ((1.0 - alpha) * 255.0) as u8;
                         *t += delta_time;
                     }
