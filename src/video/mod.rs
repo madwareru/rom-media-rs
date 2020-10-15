@@ -5,11 +5,35 @@ use crate::audio::{SoundMixer, Sound, PlaybackBuilder};
 use crate::audio::mixer::PlaybackStyle;
 
 #[derive(Copy, Clone, PartialEq)]
-pub enum PlayerState {
-    PreloadingAudio,
-    FinishedAudioPreload,
-    Playing,
+pub enum PreloadingAudioState {
+    InProgress,
+    Complete
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum FadeInState {
+    InProgress { t: f32, step: f32 },
+    Complete
+}
+
+pub enum RenderingFramesState {
+    InProgress,
     RenderedNewFrame,
+    Complete
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum FadeOutState {
+    InProgress { t: f32, step: f32 },
+    Complete
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum PlayerState {
+    PreloadingAudio{ frame: usize, state: PreloadingAudioState },
+    FadeIn(FadeInState),
+    IsRendering{ frame: usize, delta: f32, state: RenderingFramesState },
+    FadeOut(FadeOutState),
     FinishedPlaying
 }
 
@@ -19,9 +43,6 @@ pub struct SmackerPlayer {
     pub frame_height: usize,
     fade_in_frames: usize,
     fade_out_frames: usize,
-    delta: f32,
-    frame: usize,
-    audio_frame: usize,
     smacker_file: SmackerFile,
     sound_mixer: SoundMixer,
     brightness: u8
@@ -31,12 +52,12 @@ impl SmackerPlayer {
         let smacker_file = SmackerFile::load(stream)?;
         let sound_mixer = SoundMixer::new();
         Ok(Self {
-            delta: 0.0,
-            frame: 0,
-            fade_in_frames: 0, // todo: implement fade in
-            fade_out_frames: 0, // todo: implement fade out
-            audio_frame: 0,
-            state: PlayerState::PreloadingAudio,
+            fade_in_frames: 0,
+            fade_out_frames: 0,
+            state: PlayerState::PreloadingAudio{
+                frame: 0,
+                state: PreloadingAudioState::InProgress
+            },
             frame_width: smacker_file.file_info.width as usize,
             frame_height: smacker_file.file_info.height as usize,
             smacker_file,
@@ -44,52 +65,123 @@ impl SmackerPlayer {
             brightness: 255
         })
     }
+    pub fn set_fade_in(&mut self, fade_in_frames: usize) {
+        self.fade_in_frames = fade_in_frames;
+    }
+    pub fn set_fade_out(&mut self, fade_out_frames: usize) {
+        self.fade_out_frames = fade_out_frames;
+    }
     pub fn frame(&mut self, delta_time: f32) -> std::io::Result<PlayerState> {
-        if self.state == PlayerState::FinishedPlaying {
-            return Ok(self.state);
-        }
-        if self.state == PlayerState::PreloadingAudio {
-            let next_bulk_frame = self.audio_frame + 256;
-            while self.audio_frame < self.smacker_file.file_info.frames.len() && self.audio_frame < next_bulk_frame {
-                self.smacker_file.unpack(self.audio_frame, true, false)?;
-                self.audio_frame += 1;
-            }
-            if self.audio_frame == self.smacker_file.file_info.frames.len() {
-                self.state = PlayerState::FinishedAudioPreload;
-                for i in 0..self.smacker_file.file_info.audio_flags.len() {
-                    if !self.smacker_file.file_info.audio_flags[i].contains(Audio::PRESENT) {
-                        continue;
+        match &mut self.state {
+            PlayerState::FinishedPlaying => Ok(self.state),
+            PlayerState::PreloadingAudio { frame, state }  => match state {
+                PreloadingAudioState::InProgress => {
+                    let next_bulk_frame = frame + 256;
+                    while *frame < self.smacker_file.file_info.frames.len() && frame < next_bulk_frame {
+                        self.smacker_file.unpack(*frame, true, frame == 0)?;
+                        *frame += 1;
                     }
-                    let sound = Sound {
-                        sample_rate: self.smacker_file.file_info.audio_rate[i] as f32,
-                        channels: if self.smacker_file.file_info.audio_flags[i].contains(Audio::IS_STEREO) {
-                            2
-                        } else {
-                            1
-                        },
-                        samples: self.smacker_file.file_info.audio_tracks[i].clone(),
-                        playback_style: PlaybackStyle::Once
+                    if *frame == self.smacker_file.file_info.frames.len() {
+                        *state = PreloadingAudioState::Complete;
+                    }
+                    Ok(self.state)
+                },
+                PreloadingAudioState::Complete => {
+                    self.state = if self.fade_in_frames > 0 {
+                        let step = 1.0 / self.fade_in_frames as f32;
+                        PlayerState::FadeIn(FadeInState::InProgress {
+                            t: 0.0,
+                            step
+                        })
+                    } else {
+                        PlayerState::FadeIn(FadeInState::Complete)
                     };
-                    self.sound_mixer.play(PlaybackBuilder::new().with_sound(sound)).unwrap();
+                    Ok(self.state)
+                },
+            },
+            PlayerState::FadeIn(state) => match state {
+                FadeInState::InProgress { t, step } => {
+                    if *t >= 1.0 {
+                        *state = FadeInState::Complete;
+                    } else {
+                        self.brightness = (t * 255.0) as u8;
+                        *t += *step;
+                    }
+                    Ok(self.state)
+                },
+                FadeInState::Complete => {
+                    self.brightness = 255;
+                    self.state = PlayerState::IsRendering {
+                        frame: 1, // since we prerendered one frame we want to start from the second
+                        delta: 0.0,
+                        state: RenderingFramesState::RenderedNewFrame // we need to renderize frame immediately
+                    };
+                    for i in 0..self.smacker_file.file_info.audio_flags.len() {
+                        if !self.smacker_file.file_info.audio_flags[i].contains(Audio::PRESENT) {
+                            continue;
+                        }
+                        let sound = Sound {
+                            sample_rate: self.smacker_file.file_info.audio_rate[i] as f32,
+                            channels: if self.smacker_file.file_info.audio_flags[i].contains(Audio::IS_STEREO) {
+                                2
+                            } else {
+                                1
+                            },
+                            samples: self.smacker_file.file_info.audio_tracks[i].clone(),
+                            playback_style: PlaybackStyle::Once
+                        };
+                        self.sound_mixer.play(PlaybackBuilder::new().with_sound(sound)).unwrap();
+                    }
+                    Ok(self.state)
+                },
+            },
+            PlayerState::IsRendering { frame, delta, state } => {
+                if *state == RenderingFramesState::Complete {
+                    self.state = if self.fade_out_frames > 0 {
+                        let step = 1.0 / self.fade_out_frames as f32;
+                        PlayerState::FadeOut(FadeOutState::InProgress {
+                            t: 0.0,
+                            step
+                        })
+                    } else {
+                        PlayerState::FadeOut(FadeOutState::Complete)
+                    };
+                    Ok(self.state)
+                }
+                *delta += delta_time;
+                *state = if *frame == self.smacker_file.file_info.frames.len() {
+                    RenderingFramesState::Complete
+                } else if *delta < self.smacker_file.file_info.frame_interval {
+                    RenderingFramesState::InProgress
+                } else {
+                    while *delta >= self.smacker_file.file_info.frame_interval &&
+                        *frame < self.smacker_file.file_info.frames.len()
+                    {
+                        self.smacker_file.unpack(*frame, false, true)?;
+                        *frame += 1;
+                        *delta -= self.smacker_file.file_info.frame_interval;
+                    }
+                    RenderingFramesState::RenderedNewFrame
+                };
+                Ok(self.state)
+            },
+            PlayerState::FadeOut(state) => match state {
+                FadeOutState::InProgress { t, step } => {
+                    if *t >= 1.0 {
+                        *state = FadeOutState::Complete;
+                    } else {
+                        self.brightness = ((1.0 - *t) * 255.0) as u8;
+                        *t += *step;
+                    }
+                    Ok(self.state)
+                },
+                FadeOutState::Complete => {
+                    self.brightness = 0;
+                    self.state = PlayerState::FinishedPlaying;
+                    Ok(self.state)
                 }
             }
-            return Ok(self.state);
         }
-
-        self.delta += delta_time as f32;
-
-        self.state = PlayerState::Playing;
-        while self.delta >= self.smacker_file.file_info.frame_interval {
-            if self.frame < self.smacker_file.file_info.frames.len() {
-                self.smacker_file.unpack(self.frame, false, true)?;
-                self.frame += 1;
-                self.state = PlayerState::RenderedNewFrame;
-            } else {
-                self.state = PlayerState::FinishedPlaying;
-            }
-            self.delta -= self.smacker_file.file_info.frame_interval;
-        }
-        Ok(self.state)
     }
     pub fn blit_picture(
         &self,
