@@ -63,7 +63,7 @@ impl SmackerPlayer {
             frame_height: smacker_file.file_info.height as usize,
             smacker_file,
             sound_mixer,
-            brightness: 255
+            brightness: 0
         })
     }
     pub fn set_fade_in_ms(&mut self, fade_in_ms: usize) {
