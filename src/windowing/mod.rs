@@ -477,10 +477,8 @@ pub fn start_opengl_window<W: PixelWindowHandler>(window: W, window_params: Wind
         );
         let mut ptr = gl::MapBuffer(gl::PIXEL_UNPACK_BUFFER, gl::WRITE_ONLY) as *mut u32;
         if !ptr.is_null() {
-            for i in 0..texture_data.len() {
-                *ptr = texture_data[i];
-                ptr = ptr.add(1);
-            }
+            let src = (&texture_data).as_ptr();
+            std::ptr::copy_nonoverlapping(src, ptr, texture_data.len());
             gl::UnmapBuffer(gl::PIXEL_UNPACK_BUFFER);
         }
         gl::TexImage2D(
@@ -563,10 +561,8 @@ pub fn start_opengl_window<W: PixelWindowHandler>(window: W, window_params: Wind
 
                     let mut ptr = gl::MapBuffer(gl::PIXEL_UNPACK_BUFFER, gl::WRITE_ONLY) as *mut u32;
                     if !ptr.is_null() {
-                        for i in 0..texture_data.len() {
-                            *ptr = texture_data[i];
-                            ptr = ptr.add(1);
-                        }
+                        let src = (&texture_data).as_ptr();
+                        std::ptr::copy_nonoverlapping(src, ptr, texture_data.len());
                         gl::UnmapBuffer(gl::PIXEL_UNPACK_BUFFER);
                     }
                     gl::TexImage2D(
