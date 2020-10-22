@@ -8,10 +8,6 @@ pub struct Window {
 impl PixelWindowHandler for Window {
     const TITLE: &'static str = "Example windowing";
     const FRAME_INTERVAL: Duration = Duration::from_micros(16667);
-
-    fn new() -> Self {
-        Window{ game_over: false, }
-    }
     fn update(&mut self) -> PixelWindowControlFlow {
         if self.game_over {
             PixelWindowControlFlow::Exit
@@ -55,9 +51,14 @@ impl PixelWindowHandler for Window {
         println!("Mouse button released: {}", button_id);
     }
 }
-
+impl Window {
+    fn new() -> Self {
+        Window{ game_over: false, }
+    }
+}
 fn main() {
     start_opengl_window::<Window>(
+        Window::new(),
         WindowParameters{
             window_width: 640,
             window_height: 480,

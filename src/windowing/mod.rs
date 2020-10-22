@@ -299,7 +299,6 @@ pub enum PixelWindowControlFlow {
 pub trait PixelWindowHandler: 'static {
     const TITLE: &'static str;
     const FRAME_INTERVAL: Duration;
-    fn new() -> Self;
     fn update(&mut self) -> PixelWindowControlFlow;
     fn render(&mut self, buffer: &mut [u32], w: u16, h: u16);
     fn on_key_pressed(&mut self, key: Key);
@@ -315,8 +314,8 @@ pub struct WindowParameters {
     pub fullscreen: bool
 }
 
-pub fn start_opengl_window<W: PixelWindowHandler>(window_params: WindowParameters) {
-    let mut win = W::new();
+pub fn start_opengl_window<W: PixelWindowHandler>(window: W, window_params: WindowParameters) {
+    let mut win = window;
     let mut texture_data = vec![
         0xFF000000u32;
         window_params.window_width as usize * window_params.window_height as usize
