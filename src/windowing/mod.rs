@@ -274,7 +274,7 @@ out vec4 color;
 uniform sampler2D main_texture;
 void main()
 {
-    color = texture(main_texture, uv_coords);
+    color = texture(main_texture, uv_coords).zyxw;
 }
 \0";
 
@@ -311,11 +311,15 @@ pub trait PixelWindowHandler: 'static {
 pub struct WindowParameters {
     pub window_width: u16,
     pub window_height: u16,
+    pub scale_up: u16,
     pub fullscreen: bool
 }
 
 pub fn start_opengl_window<W: PixelWindowHandler>(window: W, window_params: WindowParameters) {
     let mut win = window;
+    let actual_w = window_params.window_width * window_params.scale_up;
+    let actual_h = window_params.window_height * window_params.scale_up;
+
     let mut texture_data = vec![
         0xFF000000u32;
         window_params.window_width as usize * window_params.window_height as usize
@@ -331,16 +335,18 @@ pub fn start_opengl_window<W: PixelWindowHandler>(window: W, window_params: Wind
                     .with_resizable(false)
                     .with_inner_size(Size::Logical(
                         LogicalSize::new(
-                            window_params.window_width as f64,
-                            window_params.window_height as f64
+                            actual_w as f64,
+                            actual_h as f64
                         )
                     ))
                 }
                 Some(monitor) => {
                     let video_mode = monitor.video_modes().find(|mode|
-                        mode.size().width == window_params.window_width as u32 &&
-                        mode.size().height == window_params.window_height as u32
-                    ).unwrap(); // fail if not found by design
+                        mode.size().width == actual_w as u32 &&
+                        mode.size().height == actual_h as u32
+                    ).or(monitor.video_modes().find(|mode|
+                        mode.size().width == actual_w as u32
+                    )).unwrap(); // fail if not found by design
                     WindowBuilder::new()
                         .with_title(W::TITLE)
                         .with_resizable(false)
@@ -353,8 +359,8 @@ pub fn start_opengl_window<W: PixelWindowHandler>(window: W, window_params: Wind
             .with_resizable(false)
             .with_inner_size(Size::Logical(
                 LogicalSize::new(
-                    window_params.window_width as f64,
-                    window_params.window_height as f64
+                    actual_w as f64,
+                    actual_h as f64
                 )
             ))
     };

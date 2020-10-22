@@ -62,7 +62,8 @@ fn main() {
         WindowParameters{
             window_width: 640,
             window_height: 480,
-            fullscreen: false
+            fullscreen: false,
+            scale_up: 1
         }
     );
 }
