@@ -21,8 +21,7 @@ pub struct DrawableRenderBuilder<'a, TDrawable: Drawable> {
 }
 impl<'a, TDrawable: Drawable> DrawableRenderBuilder<'a, TDrawable> {
     pub fn new(buffer: &'a mut [u32], buffer_width: usize, drawable: &'a TDrawable) -> Self {
-        let dst_height = buffer.len();
-        let dst_height = dst_height / buffer_width;
+        let dst_height = buffer.len() / buffer_width;
         Self {
             drawable,
             buffer,
@@ -35,6 +34,13 @@ impl<'a, TDrawable: Drawable> DrawableRenderBuilder<'a, TDrawable> {
             dst_y: 0,
             dst_width: buffer_width,
             dst_height
+        }
+    }
+    pub fn with_dest_pos(self, dst_x: i32, dst_y: i32) -> Self {
+        Self {
+            dst_x,
+            dst_y,
+            ..self
         }
     }
     pub fn with_source_subrect(self, src_x: usize, src_y: usize, src_width: usize, src_height: usize) -> Self {

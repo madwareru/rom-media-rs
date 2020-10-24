@@ -3,6 +3,7 @@ use rom_loaders_rs::multimedia::{SmackerFile, Audio};
 use std::time::Instant;
 use crate::audio::{SoundMixer, Sound, PlaybackBuilder};
 use crate::audio::mixer::PlaybackStyle;
+use crate::image_rendering::drawable::{Drawable, Rect, DrawableRenderBuilder};
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum PreloadingAudioState {
@@ -47,6 +48,66 @@ pub struct SmackerPlayer {
     smacker_file: SmackerFile,
     sound_mixer: SoundMixer,
     brightness: u8
+}
+impl Drawable for SmackerPlayer {
+    fn draw_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect) {
+        let mut src_rect = self_rect;
+        let mut dst_rect = dst_rect;
+        let span_length = (
+            src_rect.x_range.end - src_rect.x_range.start
+        ).min(
+            dst_rect.x_range.end - dst_rect.x_range.start
+        );
+        let span_count = (
+            src_rect.y_range.end - src_rect.y_range.start
+        ).min(
+            dst_rect.y_range.end - dst_rect.y_range.start
+        );
+        let width = (self.frame_width as usize);
+
+        let ctx = &self.smacker_file.file_info.smacker_decode_context;
+        let src = ctx.image.as_ptr();
+        let dst = buffer.as_mut_ptr();
+
+        let mut src_stride = src_rect.y_range.start * width + src_rect.x_range.start;
+        let mut dst_stride = dst_rect.y_range.start * buffer_width + dst_rect.x_range.start;
+        for _ in 0..span_count {
+            unsafe {
+                let mut src_entry = src;
+                src_entry = src_entry.add(src_stride);
+                let mut dst_entry = dst;
+                dst_entry = dst_entry.add(dst_stride);
+                for _ in 0..span_length {
+                    *dst_entry = 0xFF000000;
+                    if self.brightness > 0 {
+                        let idx = *src_entry;
+                        let clr = ctx.palette[idx as usize];
+                        let (r, g, b) = (clr.0 as u32, clr.1 as u32, clr.2 as u32);
+                        *dst_entry |= if self.brightness == 255 {
+                            r * 0x1_00_00 | g * 0x1_00 | b
+                        } else {
+                            let r = (r * self.brightness as u32) / 255;
+                            let g = (g * self.brightness as u32) / 255;
+                            let b = (b * self.brightness as u32) / 255;
+                            r * 0x1_00_00 | g * 0x1_00 | b
+                        };
+                    }
+                    src_entry = src_entry.add(1);
+                    dst_entry = dst_entry.add(1);
+                }
+            }
+            src_stride += width;
+            dst_stride += buffer_width;
+        }
+    }
+
+    fn get_width(&self) -> usize {
+        self.frame_width as usize
+    }
+
+    fn get_height(&self) -> usize {
+        self.frame_height as usize
+    }
 }
 impl SmackerPlayer {
     pub fn load_from_stream(stream: &mut Cursor<&[u8]>) -> std::io::Result<Self> {
@@ -193,33 +254,8 @@ impl SmackerPlayer {
         x: usize, y: usize,
         buffer_width: usize
     ) {
-        let mut offset = 0;
-        let mut buffer_offset = x + y * buffer_width;
-        let ctx = &self.smacker_file.file_info.smacker_decode_context;
-        for _ in 0..self.smacker_file.file_info.height as usize {
-            if buffer_offset >= buffer.len() {
-                break;
-            }
-            for i in 0..self.smacker_file.file_info.width as usize {
-                if i + x < buffer_width {
-                    buffer[buffer_offset + i] = 0xFF_00_00_00;
-                    if self.brightness > 0 {
-                        let palette_index = ctx.image[offset] as usize;
-                        let clr = ctx.palette[palette_index];
-                        let (r, g, b) = (clr.0 as u32, clr.1 as u32, clr.2 as u32);
-                        buffer[buffer_offset + i] += if self.brightness == 255 {
-                            r * 0x1_00_00 + g * 0x1_00 + b
-                        } else {
-                            let r = (r * self.brightness as u32) / 255;
-                            let g = (g * self.brightness as u32) / 255;
-                            let b = (b * self.brightness as u32) / 255;
-                            r * 0x1_00_00 + g * 0x1_00 + b
-                        }
-                    }
-                }
-                offset += 1;
-            }
-            buffer_offset += buffer_width;
-        }
+        DrawableRenderBuilder::new(buffer, buffer_width, self)
+            .with_dest_pos(x as i32, y as i32)
+            .render();
     }
 }
