@@ -78,10 +78,11 @@ fn draw_ext<TDrawable: Drawable>(drawable: &TDrawable, buffer: &mut [u32], buffe
             dst_x: i32, dst_y: i32,
             dst_width: usize, dst_height: usize
 ) {
-    let src_width_max = (src_width - src_x).min(drawable.get_width());
-    let src_height_max = (src_height - src_y).min(drawable.get_height());
-    let dst_width_max = ((dst_width as i32 - dst_x).max(0) as usize).min(buffer_width);
-    let dst_height_max = ((dst_height as i32 - dst_y).max(0) as usize).min(buffer.len() / buffer_width);
+    let src_width_max = (src_width + src_x).min(drawable.get_width());
+    let src_height_max = (src_height + src_y).min(drawable.get_height());
+
+    let dst_width_max = ((dst_width as i32 + dst_x) as usize).min(buffer_width);
+    let dst_height_max = ((dst_height as i32 + dst_y) as usize).min(buffer.len() / buffer_width);
 
     let mut src_rect = Rect {
         x_range: src_x.min(src_width_max)..src_width_max,
@@ -93,15 +94,36 @@ fn draw_ext<TDrawable: Drawable>(drawable: &TDrawable, buffer: &mut [u32], buffe
     };
 
     if dst_x < 0 {
-        src_rect.x_range.start += (-dst_x) as usize;
+        src_rect.x_range.start = (src_rect.x_range.start + (-dst_x) as usize)
+            .min(src_rect.x_range.end);
     } else {
-        dst_rect.x_range.start += dst_x as usize;
+        dst_rect.x_range.start = ((dst_rect.x_range.start as i32 + dst_x) as usize)
+            .min(dst_rect.x_range.end);
     }
     if dst_y < 0 {
-        src_rect.y_range.start += (-dst_y) as usize;
+        src_rect.y_range.start = (src_rect.y_range.start + (-dst_y) as usize)
+            .min(src_rect.y_range.end);
     } else {
-        dst_rect.y_range.start += dst_y as usize;
+        dst_rect.y_range.start = ((dst_rect.y_range.start as i32 + dst_y) as usize)
+            .min(dst_rect.y_range.end);
     }
+
+    println!("src_coord: ({}, {}), src_size: ({}, {})", src_x, src_y, src_width, src_height);
+    println!("src_width: {}, src_height: {}", drawable.get_width(), drawable.get_height());
+
+    println!("dst_coord: ({}, {}), dst_size: ({}, {})", dst_x, dst_y, dst_width, dst_height);
+    println!("dst_width: {}, dst_height: {}", buffer_width, buffer.len() / buffer_width);
+
+    println!(
+        "src_rect: ({}..{}, {}..{})",
+        src_rect.x_range.start, src_rect.x_range.end,
+        src_rect.y_range.start, src_rect.y_range.end
+    );
+    println!(
+        "dst_rect: ({}..{}, {}..{})",
+        dst_rect.x_range.start, dst_rect.x_range.end,
+        dst_rect.y_range.start, dst_rect.y_range.end
+    );
 
     drawable.draw_impl(
         buffer,
