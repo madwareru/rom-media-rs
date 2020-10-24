@@ -986,7 +986,7 @@ dependencies = [
 
 [[package]]
 name = "rom-media-rs"
-version = "0.4.12"
+version = "0.4.13"
 dependencies = [
  "cpal",
  "gl_generator",

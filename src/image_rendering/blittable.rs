@@ -6,8 +6,8 @@ pub struct Rect {
     pub y_range: Range<usize>
 }
 
-pub struct DrawableRenderBuilder<'a, TDrawable: Drawable> {
-    drawable: &'a TDrawable,
+pub struct BlitBuilder<'a, TBlittable: Blittable> {
+    drawable: &'a TBlittable,
     buffer: &'a mut [u32],
     buffer_width: usize,
     src_x: usize,
@@ -19,8 +19,8 @@ pub struct DrawableRenderBuilder<'a, TDrawable: Drawable> {
     dst_width: usize,
     dst_height: usize
 }
-impl<'a, TDrawable: Drawable> DrawableRenderBuilder<'a, TDrawable> {
-    pub fn new(buffer: &'a mut [u32], buffer_width: usize, drawable: &'a TDrawable) -> Self {
+impl<'a, TBlittable: Blittable> BlitBuilder<'a, TBlittable> {
+    pub fn new(buffer: &'a mut [u32], buffer_width: usize, drawable: &'a TBlittable) -> Self {
         let dst_height = buffer.len() / buffer_width;
         Self {
             drawable,
@@ -61,8 +61,8 @@ impl<'a, TDrawable: Drawable> DrawableRenderBuilder<'a, TDrawable> {
             ..self
         }
     }
-    pub fn render(&mut self) {
-        draw_ext(
+    pub fn blit(&mut self) {
+        blit_ext(
             self.drawable,
             self.buffer,
             self.buffer_width,
@@ -78,11 +78,11 @@ impl<'a, TDrawable: Drawable> DrawableRenderBuilder<'a, TDrawable> {
     }
 }
 
-fn draw_ext<TDrawable: Drawable>(drawable: &TDrawable, buffer: &mut [u32], buffer_width: usize,
-            src_x: usize, src_y: usize,
-            src_width: usize, src_height: usize,
-            dst_x: i32, dst_y: i32,
-            dst_width: usize, dst_height: usize
+fn blit_ext<TBlittable: Blittable>(drawable: &TBlittable, buffer: &mut [u32], buffer_width: usize,
+                                  src_x: usize, src_y: usize,
+                                  src_width: usize, src_height: usize,
+                                  dst_x: i32, dst_y: i32,
+                                  dst_width: usize, dst_height: usize
 ) {
     let src_width_max = (src_width + src_x).min(drawable.get_width());
     let src_height_max = (src_height + src_y).min(drawable.get_height());
@@ -114,7 +114,7 @@ fn draw_ext<TDrawable: Drawable>(drawable: &TDrawable, buffer: &mut [u32], buffe
             .min(dst_rect.y_range.end);
     }
 
-    drawable.draw_impl(
+    drawable.blit_impl(
         buffer,
         buffer_width,
         src_rect,
@@ -122,14 +122,14 @@ fn draw_ext<TDrawable: Drawable>(drawable: &TDrawable, buffer: &mut [u32], buffe
     )
 }
 
-pub trait Drawable {
-    fn draw_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect);
+pub trait Blittable {
+    fn blit_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect);
     fn get_width(&self) -> usize;
     fn get_height(&self) -> usize;
 }
 
-impl Drawable for BmpSprite {
-    fn draw_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect) {
+impl Blittable for BmpSprite {
+    fn blit_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect) {
         let mut src_rect = self_rect;
         let mut dst_rect = dst_rect;
         let span_length = (

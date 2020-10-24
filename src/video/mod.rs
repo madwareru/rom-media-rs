@@ -3,7 +3,7 @@ use rom_loaders_rs::multimedia::{SmackerFile, Audio};
 use std::time::Instant;
 use crate::audio::{SoundMixer, Sound, PlaybackBuilder};
 use crate::audio::mixer::PlaybackStyle;
-use crate::image_rendering::drawable::{Drawable, Rect, DrawableRenderBuilder};
+use crate::image_rendering::blittable::{Blittable, Rect, BlitBuilder};
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum PreloadingAudioState {
@@ -49,8 +49,8 @@ pub struct SmackerPlayer {
     sound_mixer: SoundMixer,
     brightness: u8
 }
-impl Drawable for SmackerPlayer {
-    fn draw_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect) {
+impl Blittable for SmackerPlayer {
+    fn blit_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect) {
         let mut src_rect = self_rect;
         let mut dst_rect = dst_rect;
         let span_length = (
