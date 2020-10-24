@@ -108,23 +108,6 @@ fn draw_ext<TDrawable: Drawable>(drawable: &TDrawable, buffer: &mut [u32], buffe
             .min(dst_rect.y_range.end);
     }
 
-    println!("src_coord: ({}, {}), src_size: ({}, {})", src_x, src_y, src_width, src_height);
-    println!("src_width: {}, src_height: {}", drawable.get_width(), drawable.get_height());
-
-    println!("dst_coord: ({}, {}), dst_size: ({}, {})", dst_x, dst_y, dst_width, dst_height);
-    println!("dst_width: {}, dst_height: {}", buffer_width, buffer.len() / buffer_width);
-
-    println!(
-        "src_rect: ({}..{}, {}..{})",
-        src_rect.x_range.start, src_rect.x_range.end,
-        src_rect.y_range.start, src_rect.y_range.end
-    );
-    println!(
-        "dst_rect: ({}..{}, {}..{})",
-        dst_rect.x_range.start, dst_rect.x_range.end,
-        dst_rect.y_range.start, dst_rect.y_range.end
-    );
-
     drawable.draw_impl(
         buffer,
         buffer_width,
