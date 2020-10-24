@@ -1,5 +1,4 @@
 use rom_media_rs::windowing::*;
-use rom_media_rs::gl;
 use std::time::Duration;
 
 pub struct Window {

@@ -18,7 +18,7 @@ pub struct SoundDriver {
 
 impl SoundDriver {
     /// After calling [`SoundDriver::new`], you can call this function to see if the audio initialization was a success.
-    pub(crate) fn get_error(&self) -> SoundError {
+    pub fn get_error(&self) -> SoundError {
         self.err
     }
 
