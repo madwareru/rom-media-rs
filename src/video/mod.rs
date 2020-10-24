@@ -248,14 +248,4 @@ impl SmackerPlayer {
             }
         }
     }
-    pub fn blit_picture(
-        &self,
-        buffer: &mut[u32],
-        x: usize, y: usize,
-        buffer_width: usize
-    ) {
-        DrawableRenderBuilder::new(buffer, buffer_width, self)
-            .with_dest_pos(x as i32, y as i32)
-            .render();
-    }
 }
