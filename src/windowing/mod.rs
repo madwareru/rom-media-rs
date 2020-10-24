@@ -554,7 +554,6 @@ pub fn start_opengl_window<W: PixelWindowHandler>(window: W, window_params: Wind
                 _ => (),
             },
             Event::RedrawRequested(_) => {
-                win.render(&mut texture_data, window_params.window_width, window_params.window_height);
                 unsafe {
                     gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pbo);
                     gl::BindTexture(gl::TEXTURE_2D, texture);
@@ -589,6 +588,7 @@ pub fn start_opengl_window<W: PixelWindowHandler>(window: W, window_params: Wind
                 let instant = Instant::now();
                 match win.update() {
                     PixelWindowControlFlow::Continue => {
+                        win.render(&mut texture_data, window_params.window_width, window_params.window_height);
                         windowed_context.window().request_redraw();
                         *control_flow = ControlFlow::WaitUntil(instant + W::FRAME_INTERVAL);
                     }
