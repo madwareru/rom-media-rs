@@ -5,7 +5,6 @@ pub struct Window {
     game_over: bool,
 }
 impl PixelWindowHandler for Window {
-    const TITLE: &'static str = "Example windowing";
     const FRAME_INTERVAL: Duration = Duration::from_micros(16667);
     fn update(&mut self) -> PixelWindowControlFlow {
         if self.game_over {
@@ -56,9 +55,10 @@ impl Window {
     }
 }
 fn main() {
-    start_opengl_window::<Window>(
+    start_pixel_window::<Window>(
         Window::new(),
         WindowParameters{
+            title: "Example windowing",
             window_width: 640,
             window_height: 480,
             fullscreen: false,

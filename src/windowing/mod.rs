@@ -297,7 +297,6 @@ pub enum PixelWindowControlFlow {
 }
 
 pub trait PixelWindowHandler: 'static {
-    const TITLE: &'static str;
     const FRAME_INTERVAL: Duration;
     fn update(&mut self) -> PixelWindowControlFlow;
     fn render(&mut self, buffer: &mut [u32], w: u16, h: u16);
@@ -309,13 +308,14 @@ pub trait PixelWindowHandler: 'static {
 }
 
 pub struct WindowParameters {
+    pub title: &'static str,
     pub window_width: u16,
     pub window_height: u16,
     pub scale_up: u16,
     pub fullscreen: bool
 }
 
-pub fn start_opengl_window<W: PixelWindowHandler>(window: W, window_params: WindowParameters) {
+pub fn start_pixel_window<W: PixelWindowHandler>(window: W, window_params: WindowParameters) {
     let mut win = window;
     let actual_w = window_params.window_width * window_params.scale_up;
     let actual_h = window_params.window_height * window_params.scale_up;
@@ -331,7 +331,7 @@ pub fn start_opengl_window<W: PixelWindowHandler>(window: W, window_params: Wind
             let primary_monitor = event_loop.primary_monitor();
             match primary_monitor {
                 None => {WindowBuilder::new()
-                    .with_title(W::TITLE)
+                    .with_title(window_params.title)
                     .with_resizable(false)
                     .with_inner_size(Size::Logical(
                         LogicalSize::new(
@@ -348,14 +348,14 @@ pub fn start_opengl_window<W: PixelWindowHandler>(window: W, window_params: Wind
                         mode.size().width == actual_w as u32
                     )).unwrap(); // fail if not found by design
                     WindowBuilder::new()
-                        .with_title(W::TITLE)
+                        .with_title(window_params.title)
                         .with_resizable(false)
                         .with_fullscreen(Some(Fullscreen::Exclusive(video_mode)))
                 }
             }
         }
         false => WindowBuilder::new()
-            .with_title(W::TITLE)
+            .with_title(window_params.title)
             .with_resizable(false)
             .with_inner_size(Size::Logical(
                 LogicalSize::new(
