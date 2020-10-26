@@ -4,10 +4,8 @@ use glutin::window::{WindowBuilder, Fullscreen};
 use glutin::event_loop::{EventLoop, ControlFlow};
 use glutin::event::{Event, WindowEvent, KeyboardInput, VirtualKeyCode, ElementState, MouseButton};
 use glutin::ContextBuilder;
-use glutin::monitor::{VideoMode, MonitorHandle};
-use glutin::dpi::{Size, LogicalSize, PhysicalSize};
+use glutin::dpi::{Size, LogicalSize};
 use std::time::{Instant, Duration};
-use std::sync::Mutex;
 use super::gl;
 
 #[derive(Debug, Hash, PartialEq, Clone, Copy)]
@@ -475,7 +473,7 @@ pub fn start_pixel_window<W: PixelWindowHandler>(window: W, window_params: Windo
             std::ptr::null_mut(),
             gl::STREAM_DRAW,
         );
-        let mut ptr = gl::MapBuffer(gl::PIXEL_UNPACK_BUFFER, gl::WRITE_ONLY) as *mut u32;
+        let ptr = gl::MapBuffer(gl::PIXEL_UNPACK_BUFFER, gl::WRITE_ONLY) as *mut u32;
         if !ptr.is_null() {
             let src = (&texture_data).as_ptr();
             std::ptr::copy_nonoverlapping(src, ptr, texture_data.len());
@@ -511,7 +509,7 @@ pub fn start_pixel_window<W: PixelWindowHandler>(window: W, window_params: Windo
                 return
             },
             Event::WindowEvent { event, .. } => match event {
-                WindowEvent::ScaleFactorChanged { scale_factor: factor, new_inner_size } => {
+                WindowEvent::ScaleFactorChanged { scale_factor: factor, .. } => {
                     scale_factor = factor;
                 },
                 WindowEvent::Resized(physical_size) => {
@@ -548,7 +546,7 @@ pub fn start_pixel_window<W: PixelWindowHandler>(window: W, window_params: Windo
                     }
                 },
                 WindowEvent::CursorMoved { position, .. } => {
-                    let logical = position.to_logical(scale_factor);;
+                    let logical = position.to_logical(scale_factor);
                     win.on_mouse_moved(logical.x, logical.y);
                 },
                 _ => (),
@@ -558,7 +556,7 @@ pub fn start_pixel_window<W: PixelWindowHandler>(window: W, window_params: Windo
                     gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pbo);
                     gl::BindTexture(gl::TEXTURE_2D, texture);
 
-                    let mut ptr = gl::MapBuffer(gl::PIXEL_UNPACK_BUFFER, gl::WRITE_ONLY) as *mut u32;
+                    let ptr = gl::MapBuffer(gl::PIXEL_UNPACK_BUFFER, gl::WRITE_ONLY) as *mut u32;
                     if !ptr.is_null() {
                         let src = (&texture_data).as_ptr();
                         std::ptr::copy_nonoverlapping(src, ptr, texture_data.len());

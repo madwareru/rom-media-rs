@@ -1,9 +1,8 @@
 use std::io::Cursor;
 use rom_loaders_rs::multimedia::{SmackerFile, Audio};
-use std::time::Instant;
 use crate::audio::{SoundMixer, Sound, PlaybackBuilder};
 use crate::audio::mixer::PlaybackStyle;
-use crate::image_rendering::blittable::{Blittable, Rect, BlitBuilder};
+use crate::image_rendering::blittable::{Blittable, Rect};
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum PreloadingAudioState {
@@ -51,8 +50,8 @@ pub struct SmackerPlayer {
 }
 impl Blittable for SmackerPlayer {
     fn blit_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect) {
-        let mut src_rect = self_rect;
-        let mut dst_rect = dst_rect;
+        let src_rect = self_rect;
+        let dst_rect = dst_rect;
         let span_length = (
             src_rect.x_range.end - src_rect.x_range.start
         ).min(
@@ -63,7 +62,7 @@ impl Blittable for SmackerPlayer {
         ).min(
             dst_rect.y_range.end - dst_rect.y_range.start
         );
-        let width = (self.frame_width as usize);
+        let width = self.frame_width as usize;
 
         let ctx = &self.smacker_file.file_info.smacker_decode_context;
         let src = ctx.image.as_ptr();

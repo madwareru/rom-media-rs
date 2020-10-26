@@ -57,7 +57,7 @@ impl Sound {
     pub fn from_bytes_ext(bytes: &[u8], playback_style: PlaybackStyle) -> std::io::Result<Self> {
         let mut cursor = Cursor::new(bytes);
         let content = WavContent::read(&mut cursor)?;
-        let mut sound = Sound::from(&content);
+        let sound = Sound::from(&content);
         Ok(Self {
             playback_style,
             ..sound
@@ -239,9 +239,7 @@ impl MixerInternal {
             },
             MixerMessage::Stop(id) => {
                 self.sounds.remove(&id);
-            },
-
-            _ => unreachable!() //it's nice to fail when we added some new event and didn't handle it properly here
+            }
         }
     }
 

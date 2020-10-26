@@ -2,10 +2,9 @@ use std::sync::mpsc::{Sender, channel};
 use super::SoundError;
 use super::mixer::MixerMessage;
 use cpal::traits::{HostTrait, DeviceTrait, EventLoopTrait};
-use cpal::{SampleRate, SupportedFormatsError, SupportedOutputFormats, SampleFormat};
+use cpal::{SampleRate, SampleFormat};
 use std::thread;
-use crate::audio::mixer::{SoundMixer, MixerInternal};
-use cpal::UnknownTypeOutputBuffer::F32;
+use crate::audio::mixer::{ MixerInternal};
 
 pub struct SoundDriver {
     event_loop: Option<cpal::EventLoop>,

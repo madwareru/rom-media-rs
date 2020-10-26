@@ -130,8 +130,8 @@ pub trait Blittable {
 
 impl Blittable for BmpSprite {
     fn blit_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect) {
-        let mut src_rect = self_rect;
-        let mut dst_rect = dst_rect;
+        let src_rect = self_rect;
+        let dst_rect = dst_rect;
         let span_length = (
             src_rect.x_range.end - src_rect.x_range.start
         ).min(

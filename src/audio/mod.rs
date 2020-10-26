@@ -1,9 +1,9 @@
-use std::fmt::{Display, Formatter, Write};
-use rom_loaders_rs::multimedia::WavContent;
+use std::fmt::{Display, Formatter};
 
 pub mod mixer;
 mod sound_driver;
 pub use mixer::{SoundMixer, Sound, SoundId, PlaybackBuilder};
+pub use sound_driver::SoundDriver;
 
 #[derive(Debug, Clone, Copy)]
 /// error produced when creating the [`SoundDriver`]
