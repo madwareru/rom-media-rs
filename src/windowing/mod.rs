@@ -303,6 +303,7 @@ pub trait PixelWindowHandler: 'static {
     fn on_mouse_moved(&mut self, x: f64, y: f64);
     fn on_mouse_button_pressed(&mut self, button_id: u8);
     fn on_mouse_button_released(&mut self, button_id: u8);
+    fn on_window_closed(&mut self);
 }
 
 pub struct WindowParameters {
@@ -315,8 +316,8 @@ pub struct WindowParameters {
 
 pub fn start_pixel_window<W: PixelWindowHandler>(window: W, window_params: WindowParameters) {
     let mut win = window;
-    let actual_w = window_params.window_width * window_params.scale_up;
-    let actual_h = window_params.window_height * window_params.scale_up;
+    let actual_w = window_params.window_width * window_params.scale_up.max(1);
+    let actual_h = window_params.window_height * window_params.scale_up.max(1);
 
     let mut texture_data = vec![
         0xFF000000u32;
@@ -498,6 +499,7 @@ pub fn start_pixel_window<W: PixelWindowHandler>(window: W, window_params: Windo
         *control_flow = ControlFlow::Wait;
         match event {
             Event::LoopDestroyed => {
+                win.on_window_closed();
                 unsafe {
                     gl::DeleteBuffers(1, &mut pbo);
                     gl::DeleteTextures(1, &mut texture);
