@@ -7,6 +7,8 @@ use glutin::ContextBuilder;
 use glutin::dpi::{Size, LogicalSize};
 use std::time::{Instant, Duration};
 use super::gl;
+use crate::pixel_surface::{PixelSurface, opengl_surface::OpenGlSurfaceImpl};
+use crate::opengl_wrappings::{init_opengl_context, clear_background};
 
 #[derive(Debug, Hash, PartialEq, Clone, Copy)]
 pub enum Key {
@@ -221,74 +223,6 @@ impl Key {
     }
 }
 
-macro_rules! check_shader {
-    ($a:ident, $message:literal) => {
-        let mut success = std::mem::zeroed();
-        let mut info_log = [0u8;512];
-        gl::GetShaderiv($a, gl::COMPILE_STATUS, &mut success);
-        if success == gl::FALSE as i32 {
-           gl::GetShaderInfoLog($a, 512, std::ptr::null_mut(), info_log.as_mut_ptr() as *mut i8);
-           let mut error_string = String::new();
-           for i in 0..512 {
-               if info_log[i] == 0 {
-                   break;
-               }
-               error_string.push(char::from(info_log[i]));
-           }
-           panic!("{} {}", $message, error_string);
-        }
-    }
-}
-
-const VERTS: [f32; 12] = [
-    -1.0,  1.0, 0.0,
-    -1.0, -1.0, 0.0,
-     1.0,  1.0, 0.0,
-     1.0, -1.0, 0.0
-];
-const TEX_COORDS: [f32; 8] = [
-    0.0, 0.0,
-    0.0, 1.0,
-    1.0, 0.0,
-    1.0, 1.0
-];
-
-const VERT_SRC: &[u8] = b"
-#version 330 core
-layout (location = 0) in vec3 position;
-layout (location = 1) in vec2 uv;
-out vec2 uv_coords;
-void main()
-{
-    gl_Position = vec4(position.x, position.y, position.z, 1.0);
-    uv_coords = uv;
-}
-\0";
-
-const FRAG_SRC: &[u8] = b"
-#version 330 core
-in vec2 uv_coords;
-out vec4 color;
-uniform sampler2D main_texture;
-void main()
-{
-    color = texture(main_texture, uv_coords).zyxw;
-}
-\0";
-
-fn load(gl_context: &glutin::Context<PossiblyCurrent>) {
-    let _ = gl::load_with(|ptr| gl_context.get_proc_address(ptr) as *const _);
-
-    let version = unsafe {
-        let data = CStr::from_ptr(gl::GetString(gl::VERSION) as *const _)
-            .to_bytes()
-            .to_vec();
-        String::from_utf8(data).unwrap()
-    };
-
-    println!("OpenGL version {}", version);
-}
-
 pub enum PixelWindowControlFlow {
     Continue,
     Exit
@@ -318,11 +252,6 @@ pub fn start_pixel_window<W: PixelWindowHandler>(window: W, window_params: Windo
     let mut win = window;
     let actual_w = window_params.window_width * window_params.scale_up.max(1);
     let actual_h = window_params.window_height * window_params.scale_up.max(1);
-
-    let mut texture_data = vec![
-        0xFF000000u32;
-        window_params.window_width as usize * window_params.window_height as usize
-    ];
 
     let event_loop = EventLoop::new();
     let window_builder = match window_params.fullscreen {
@@ -368,146 +297,21 @@ pub fn start_pixel_window<W: PixelWindowHandler>(window: W, window_params: Windo
         .build_windowed(window_builder, &event_loop)
         .unwrap();
 
-    let windowed_context = unsafe { windowed_context.make_current().unwrap() };
+    let windowed_context = init_opengl_context(windowed_context);
     let mut scale_factor = windowed_context.window().scale_factor();
 
-    load(&windowed_context.context());
 
-    let mut vbo_vertices = unsafe{
-        let mut vbo = std::mem::zeroed();
-        gl::GenBuffers(1, &mut vbo);
-        vbo
-    };
-
-    let mut vbo_uv = unsafe{
-        let mut vbo = std::mem::zeroed();
-        gl::GenBuffers(1, &mut vbo);
-        vbo
-    };
-
-    let shader_program = unsafe {
-        let vs = gl::CreateShader(gl::VERTEX_SHADER);
-        gl::ShaderSource(
-            vs,
-            1,
-            [VERT_SRC.as_ptr() as *const _].as_ptr(),
-            std::ptr::null(),
-        );
-        gl::CompileShader(vs);
-        check_shader!(vs, "Error on vertex shader compile!");
-
-        let fs = gl::CreateShader(gl::FRAGMENT_SHADER);
-        gl::ShaderSource(
-            fs,
-            1,
-            [FRAG_SRC.as_ptr() as *const _].as_ptr(),
-            std::ptr::null(),
-        );
-        gl::CompileShader(fs);
-        check_shader!(fs, "Error on fragment shader compile!");
-
-        let program = gl::CreateProgram();
-        gl::AttachShader(program, vs);
-        gl::AttachShader(program, fs);
-        gl::LinkProgram(program);
-
-        gl::DeleteShader(vs);
-        gl::DeleteShader(fs);
-
-        program
-    };
-
-    let mut vao = unsafe{
-        let mut vao = std::mem::zeroed();
-        gl::GenVertexArrays(1, &mut vao);
-        gl::BindVertexArray(vao);
-
-        gl::BindBuffer(gl::ARRAY_BUFFER, vbo_vertices);
-        gl::BufferData(
-            gl::ARRAY_BUFFER,
-            (VERTS.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
-            VERTS.as_ptr() as *const _,
-            gl::STATIC_DRAW,
-        );
-        gl::VertexAttribPointer(
-            0, 3, gl::FLOAT, gl::FALSE,
-            (3 * std::mem::size_of::<gl::types::GLfloat>()) as i32,
-            std::ptr::null_mut()
-        );
-        gl::EnableVertexAttribArray(0);
-
-        gl::BindBuffer(gl::ARRAY_BUFFER, vbo_uv);
-        gl::BufferData(
-            gl::ARRAY_BUFFER,
-            (TEX_COORDS.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
-            TEX_COORDS.as_ptr() as *const _,
-            gl::STATIC_DRAW,
-        );
-        gl::VertexAttribPointer(
-            1, 2, gl::FLOAT, gl::FALSE,
-            (2 * std::mem::size_of::<gl::types::GLfloat>()) as gl::types::GLsizei,
-            std::ptr::null_mut()
-        );
-        gl::EnableVertexAttribArray(1);
-        gl::BindVertexArray(0);
-        vao
-    };
-
-    let mut texture = unsafe {
-        let mut tex = std::mem::zeroed();
-        gl::GenTextures(1, &mut tex);
-        gl::BindTexture(gl::TEXTURE_2D, tex);
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, 0x2600); // GL_NEAREST
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, 0x2600); // GL_NEAREST
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, 0x812F); // GL_CLAMP_TO_EDGE
-        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, 0x812F); // GL_CLAMP_TO_EDGE
-        tex
-    };
-
-    let mut pbo = unsafe {
-        let mut pbo = std::mem::zeroed();
-        gl::GenBuffers(1, &mut pbo);
-        gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pbo);
-        gl::BufferData(
-            gl::PIXEL_UNPACK_BUFFER,
-            (4 * texture_data.len()) as gl::types::GLsizeiptr,
-            std::ptr::null_mut(),
-            gl::STREAM_DRAW,
-        );
-        let ptr = gl::MapBuffer(gl::PIXEL_UNPACK_BUFFER, gl::WRITE_ONLY) as *mut u32;
-        if !ptr.is_null() {
-            let src = (&texture_data).as_ptr();
-            std::ptr::copy_nonoverlapping(src, ptr, texture_data.len());
-            gl::UnmapBuffer(gl::PIXEL_UNPACK_BUFFER);
-        }
-        gl::TexImage2D(
-            gl::TEXTURE_2D, 0,
-            gl::RGB as gl::types::GLsizei,
-            window_params.window_width as gl::types::GLsizei,
-            window_params.window_height as gl::types::GLsizei,
-            0,
-            gl::RGBA,
-            gl::UNSIGNED_BYTE,
-            std::ptr::null_mut()
-        );
-        gl::Finish();
-
-        pbo
-    };
+    let mut surface = PixelSurface::<OpenGlSurfaceImpl>::create(
+        window_params.window_width,
+        window_params.window_height
+    );
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
         match event {
             Event::LoopDestroyed => {
                 win.on_window_closed();
-                unsafe {
-                    gl::DeleteBuffers(1, &mut pbo);
-                    gl::DeleteTextures(1, &mut texture);
-                    gl::DeleteVertexArrays(1, &mut vao);
-                    gl::DeleteProgram(shader_program);
-                    gl::DeleteBuffers(1, &mut vbo_uv);
-                    gl::DeleteBuffers(1, &mut vbo_vertices);
-                }
+                surface.cleanup();
                 return
             },
             Event::WindowEvent { event, .. } => match event {
@@ -554,41 +358,16 @@ pub fn start_pixel_window<W: PixelWindowHandler>(window: W, window_params: Windo
                 _ => (),
             },
             Event::RedrawRequested(_) => {
-                unsafe {
-                    gl::BindBuffer(gl::PIXEL_UNPACK_BUFFER, pbo);
-                    gl::BindTexture(gl::TEXTURE_2D, texture);
-
-                    let ptr = gl::MapBuffer(gl::PIXEL_UNPACK_BUFFER, gl::WRITE_ONLY) as *mut u32;
-                    if !ptr.is_null() {
-                        let src = (&texture_data).as_ptr();
-                        std::ptr::copy_nonoverlapping(src, ptr, texture_data.len());
-                        gl::UnmapBuffer(gl::PIXEL_UNPACK_BUFFER);
-                    }
-                    gl::TexImage2D(
-                        gl::TEXTURE_2D, 0,
-                        gl::RGB as gl::types::GLsizei,
-                        window_params.window_width as gl::types::GLsizei,
-                        window_params.window_height as gl::types::GLsizei,
-                        0,
-                        gl::RGBA,
-                        gl::UNSIGNED_BYTE,
-                        std::ptr::null()
-                    );
-                    gl::Finish();
-                    gl::ClearColor(0.5, 0.5, 0.5, 1.0);
-                    gl::Clear(gl::COLOR_BUFFER_BIT);
-                    gl::UseProgram(shader_program);
-                    gl::BindTexture(gl::TEXTURE_2D, texture);
-                    gl::BindVertexArray(vao);
-                    gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
-                }
+                surface.actualize_buffer();
+                clear_background(0.0, 0.0, 0.0, 1.0);
+                surface.draw(0.0, 0.0, 1.0, 1.0);
                 windowed_context.swap_buffers().unwrap();
             },
             _ => {
                 let instant = Instant::now();
                 match win.update() {
                     PixelWindowControlFlow::Continue => {
-                        win.render(&mut texture_data, window_params.window_width, window_params.window_height);
+                        win.render(&mut surface.bytes, window_params.window_width, window_params.window_height);
                         windowed_context.window().request_redraw();
                         *control_flow = ControlFlow::WaitUntil(instant + W::FRAME_INTERVAL);
                     }

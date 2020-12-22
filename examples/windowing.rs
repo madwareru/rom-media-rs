@@ -1,7 +1,10 @@
 use rom_media_rs::windowing::*;
 use std::time::{Duration, Instant};
-use rom_media_rs::image_rendering::brezenham::plot_brezenham;
+use rom_loaders_rs::images::sprite::BmpSprite;
+use rom_media_rs::image_rendering::bresenham::{ plot_bresenham_4d};
 use std::cmp::Ordering;
+use rom_media_rs::image_rendering::triangles::{draw_brezenham_triangles};
+use bumpalo::Bump;
 
 const TEST_PAL: &[u32] = &[
     0xFF000000,
@@ -40,10 +43,12 @@ const TEST_PAL: &[u32] = &[
 
 pub struct Window {
     game_over: bool,
+    delta_instant: Instant,
     mouse_x: i32,
     mouse_y: i32,
     bench_results: [f32; 1024],
-    cur_bench: usize
+    cur_bench: usize,
+    bump: Bump
 }
 impl PixelWindowHandler for Window {
     const FRAME_INTERVAL: Duration = Duration::from_micros(33000);
@@ -51,37 +56,53 @@ impl PixelWindowHandler for Window {
         if self.game_over {
             PixelWindowControlFlow::Exit
         } else {
+            let _dt = self.delta_instant.elapsed().as_millis() as f32 / 1_000.0;
+            self.delta_instant = Instant::now();
+
             PixelWindowControlFlow::Continue
         }
     }
-    fn render(&mut self, buffer: &mut [u32], w: u16, _h: u16) {
-        let (mut bottom, mut top) = ([0i32; 32], [0i32; 32]);
-        let inst = Instant::now();
-        for jj in 0..10 {
-            let yy = 70 * jj + 5;
-            for ii in 0..31 {
-                let xx = 16 + ii * 32;
-                for k in 0..32 {
-                    bottom[k] = yy;
-                    top[k] = yy + 70;
-                }
-                plot_brezenham(0, yy + 30i32, 31, yy, |x, y| {
-                    top[x as usize] = y.min(top[x as usize]);
-                });
-                plot_brezenham(0, yy + 70, 31, yy + 70, |x, y| {
-                    bottom[x as usize] = y.max(bottom[x as usize]);
-                });
-                for ix in xx..xx+32 {
-                    let i = ix - xx;
-                    let top_y = top[i];
-                    let bottom_y = bottom[i];
-                    plot_brezenham(top_y+1, 0, bottom_y, 31, |row, id| {
-                        let idx = (row as usize) * w as usize + ix;
-                        buffer[idx] = TEST_PAL[id as usize];
-                    })
-                }
-            }
+    fn render(&mut self, buffer: &mut [u32], w: u16, h: u16) {
+        for entry in buffer.iter_mut() {
+            *entry = 0xFF777777;
         }
+
+        let inst = Instant::now();
+
+        self.bump.reset();
+
+        draw_brezenham_triangles(
+            &self.bump,
+            &[
+                (
+                    [(1, 1), (318, 1), (1, 178)],
+                    [(0, 0), (255, 0), (0, 255)]
+                ),
+                (
+                    [(318, 178), (318, 1), (1, 178)],
+                    [(255, 255), (255, 0), (0, 255)]
+                )
+            ],
+            w as usize, w as usize * h as usize,
+            |idx, (u, v)| {
+                let checker_board = (((u / 16) & 0x01) ^ ((v / 16) & 0x01)) as u32;
+                let r = u as u32 * checker_board;
+                let g = v as u32 * checker_board;
+                buffer[idx] = 0xFF_00_00_00 | r * 0x1_00_00 | g * 0x1_00;
+            }
+        );
+
+        plot_bresenham_4d(
+            w as i32 / 2 , h as i32 / 2, 0, 0,
+            self.mouse_x, self.mouse_y,
+            (self.mouse_x - w as i32 / 2).abs().min(255),
+            (self.mouse_y - h as i32 / 2).abs().min(255),
+            |x, y, r, g| {
+                let idx = (y as usize) * w as usize + x as usize;
+                buffer[idx] = 0xFF000000 | (r as u32 * 0x10000) | (g as u32 * 0x100);
+            }
+        );
+
         self.bench_results[self.cur_bench] = inst.elapsed().as_micros() as f32 / 1000.0;
         self.cur_bench = (self.cur_bench + 1) % 1024;
     }
@@ -97,8 +118,8 @@ impl PixelWindowHandler for Window {
     }
 
     fn on_mouse_moved(&mut self, x: f64, y: f64) {
-        self.mouse_x = (x as i32).max(0).min(639);
-        self.mouse_y = (y as i32).max(0).min(479);
+        self.mouse_x = ((x / 4.0) as i32).max(0).min(319);
+        self.mouse_y = ((y / 4.0) as i32).max(0).min(179);
     }
 
     fn on_mouse_button_pressed(&mut self, button_id: u8) {
@@ -145,10 +166,12 @@ impl Window {
     fn new() -> Self {
         Window{
             game_over: false,
+            delta_instant: Instant::now(),
             mouse_x: 0,
             mouse_y: 0,
             bench_results: [0.0; 1024],
-            cur_bench: 0
+            cur_bench: 0,
+            bump: Bump::new()
         }
     }
 }
@@ -157,10 +180,10 @@ fn main() {
         Window::new(),
         WindowParameters{
             title: "Example windowing",
-            window_width: 1024,
-            window_height: 768,
+            window_width: 320,
+            window_height: 180,
             fullscreen: false,
-            scale_up: 1
+            scale_up: 4
         }
     );
 }
