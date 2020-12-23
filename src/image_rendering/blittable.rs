@@ -144,42 +144,28 @@ impl Blittable for BmpSprite {
         );
         match self {
             BmpSprite::Paletted { width, palette, palette_indexes, .. } => {
-                let src = palette_indexes.as_ptr();
-                let dst = buffer.as_mut_ptr();
-
                 let mut src_stride = src_rect.y_range.start * *width + src_rect.x_range.start;
                 let mut dst_stride = dst_rect.y_range.start * buffer_width + dst_rect.x_range.start;
                 for _ in 0..span_count {
-                    unsafe {
-                        let mut src_entry = src;
-                        src_entry = src_entry.add(src_stride);
-                        let mut dst_entry = dst;
-                        dst_entry = dst_entry.add(dst_stride);
-                        for _ in 0..span_length {
-                            let idx = *src_entry;
-                            let color = palette[idx as usize];
-                            *dst_entry = color;
-                            src_entry = src_entry.add(1);
-                            dst_entry = dst_entry.add(1);
-                        }
+                    let zipped = (&mut buffer[dst_stride..dst_stride+span_length])
+                        .iter_mut()
+                        .zip(&palette_indexes[src_stride..src_stride+span_length]);
+                    for (dest, src) in zipped {
+                        *dest = palette[*src as usize];
                     }
                     src_stride += *width;
                     dst_stride += buffer_width;
                 }
             }
             BmpSprite::TrueColor { width, colors, .. } => {
-                let src = colors.as_ptr();
-                let dst = buffer.as_mut_ptr();
-
                 let mut src_stride = src_rect.y_range.start * *width + src_rect.x_range.start;
                 let mut dst_stride = dst_rect.y_range.start * buffer_width + dst_rect.x_range.start;
                 for _ in 0..span_count {
-                    unsafe {
-                        let mut src_entry = src;
-                        src_entry = src_entry.add(src_stride);
-                        let mut dst_entry = dst;
-                        dst_entry = dst_entry.add(dst_stride);
-                        src_entry.copy_to_nonoverlapping(dst_entry, span_length);
+                    let zipped = (&mut buffer[dst_stride..dst_stride+span_length])
+                        .iter_mut()
+                        .zip(&colors[src_stride..src_stride+span_length]);
+                    for (dest, src) in zipped {
+                        *dest = *src;
                     }
                     src_stride += *width;
                     dst_stride += buffer_width;

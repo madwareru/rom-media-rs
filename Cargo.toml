@@ -1,6 +1,6 @@
 [package]
 name = "rom-media-rs"
-version = "0.5.4"
+version = "0.5.5"
 build = "build.rs"
 authors = ["madwareru <madware.ru@gmail.com>"]
 edition = "2018"
