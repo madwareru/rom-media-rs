@@ -65,34 +65,38 @@ impl Blittable for SmackerPlayer {
         let width = self.frame_width as usize;
 
         let ctx = &self.smacker_file.file_info.smacker_decode_context;
-        let src = ctx.image.as_ptr();
-        let dst = buffer.as_mut_ptr();
 
         let mut src_stride = src_rect.y_range.start * width + src_rect.x_range.start;
         let mut dst_stride = dst_rect.y_range.start * buffer_width + dst_rect.x_range.start;
         for _ in 0..span_count {
-            unsafe {
-                let mut src_entry = src;
-                src_entry = src_entry.add(src_stride);
-                let mut dst_entry = dst;
-                dst_entry = dst_entry.add(dst_stride);
-                for _ in 0..span_length {
-                    *dst_entry = 0xFF000000;
-                    if self.brightness > 0 {
-                        let idx = *src_entry;
+            match self.brightness {
+                0 => for dest in (&mut buffer[dst_stride..dst_stride + span_length]).iter_mut() {
+                    *dest = 0xFF_00_00_00;
+                },
+                255 => {
+                    let zipped = (&mut buffer[dst_stride..dst_stride + span_length])
+                        .iter_mut()
+                        .zip(&ctx.image[src_stride..src_stride + span_length]);
+                    for (dest, src) in zipped {
+                        let idx = *src;
                         let clr = ctx.palette[idx as usize];
                         let (r, g, b) = (clr.0 as u32, clr.1 as u32, clr.2 as u32);
-                        *dst_entry |= if self.brightness == 255 {
-                            r * 0x1_00_00 | g * 0x1_00 | b
-                        } else {
-                            let r = (r * self.brightness as u32) / 255;
-                            let g = (g * self.brightness as u32) / 255;
-                            let b = (b * self.brightness as u32) / 255;
-                            r * 0x1_00_00 | g * 0x1_00 | b
-                        };
+                        *dest = r * 0x1_00_00 | g * 0x1_00 | b;
                     }
-                    src_entry = src_entry.add(1);
-                    dst_entry = dst_entry.add(1);
+                },
+                _ => {
+                    let zipped = (&mut buffer[dst_stride..dst_stride + span_length])
+                        .iter_mut()
+                        .zip(&ctx.image[src_stride..src_stride + span_length]);
+                    for (dest, src) in zipped {
+                        let idx = *src;
+                        let clr = ctx.palette[idx as usize];
+                        let (r, g, b) = (clr.0 as u32, clr.1 as u32, clr.2 as u32);
+                        let r = (r * self.brightness as u32) / 255;
+                        let g = (g * self.brightness as u32) / 255;
+                        let b = (b * self.brightness as u32) / 255;
+                        *dest = r * 0x1_00_00 | g * 0x1_00 | b;
+                    }
                 }
             }
             src_stride += width;
