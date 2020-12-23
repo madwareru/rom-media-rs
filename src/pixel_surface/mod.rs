@@ -1,5 +1,3 @@
-pub mod opengl_surface;
-
 
 pub trait PixelSurfaceImpl {
     type TextureHandle;

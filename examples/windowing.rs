@@ -118,8 +118,8 @@ impl PixelWindowHandler for Window {
     }
 
     fn on_mouse_moved(&mut self, x: f64, y: f64) {
-        self.mouse_x = ((x / 4.0) as i32).max(0).min(319);
-        self.mouse_y = ((y / 4.0) as i32).max(0).min(179);
+        self.mouse_x = (x as i32).max(0).min(319);
+        self.mouse_y = (y as i32).max(0).min(179);
     }
 
     fn on_mouse_button_pressed(&mut self, button_id: u8) {

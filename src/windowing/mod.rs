@@ -7,8 +7,8 @@ use glutin::ContextBuilder;
 use glutin::dpi::{Size, LogicalSize};
 use std::time::{Instant, Duration};
 use super::gl;
-use crate::pixel_surface::{PixelSurface, opengl_surface::OpenGlSurfaceImpl};
-use crate::opengl_wrappings::{init_opengl_context, clear_background};
+use crate::pixel_surface::{PixelSurface};
+use crate::opengl_wrappings::{init_opengl_context, clear_background, OpenGlSurfaceImpl};
 
 #[derive(Debug, Hash, PartialEq, Clone, Copy)]
 pub enum Key {
@@ -300,7 +300,6 @@ pub fn start_pixel_window<W: PixelWindowHandler>(window: W, window_params: Windo
     let windowed_context = init_opengl_context(windowed_context);
     let mut scale_factor = windowed_context.window().scale_factor();
 
-
     let mut surface = PixelSurface::<OpenGlSurfaceImpl>::create(
         window_params.window_width,
         window_params.window_height
@@ -352,8 +351,13 @@ pub fn start_pixel_window<W: PixelWindowHandler>(window: W, window_params: Windo
                     }
                 },
                 WindowEvent::CursorMoved { position, .. } => {
-                    let logical = position.to_logical(scale_factor);
-                    win.on_mouse_moved(logical.x, logical.y);
+                    let logical: glutin::dpi::LogicalPosition<f64> = position.to_logical(scale_factor);
+                    let mouse_x = logical.x;
+                    let mouse_y = logical.y;
+                    win.on_mouse_moved(
+                        mouse_x / (window_params.scale_up as f64),
+                        mouse_y / (window_params.scale_up as f64)
+                    );
                 },
                 _ => (),
             },
