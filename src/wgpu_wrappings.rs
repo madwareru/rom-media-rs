@@ -3,6 +3,8 @@ use super::gl;
 use std::ffi::CStr;
 use crate::pixel_surface::{PixelSurfaceImpl};
 
+// todo: make it really be wgpu
+
 macro_rules! check_shader {
     ($a:ident, $message:literal) => {
         let mut success = std::mem::zeroed();
@@ -85,7 +87,7 @@ void main()
 }
 \0";
 
-pub struct OpenGlSurfaceHandle {
+pub struct WgpuSurfaceHandle {
     pbo: gl::types::GLuint,
     vbo_vertices: gl::types::GLuint,
     vbo_uv: gl::types::GLuint,
@@ -98,9 +100,9 @@ pub struct OpenGlSurfaceHandle {
     height: u16
 }
 
-pub struct OpenGlSurfaceImpl;
-impl PixelSurfaceImpl for OpenGlSurfaceImpl {
-    type TextureHandle = OpenGlSurfaceHandle;
+pub struct WgpuSurfaceImpl;
+impl PixelSurfaceImpl for WgpuSurfaceImpl {
+    type TextureHandle = WgpuSurfaceHandle;
 
     fn create_texture_handle(width: u16, height: u16, initial_bytes: &[u32]) -> Self::TextureHandle {
         let vbo_vertices = unsafe {

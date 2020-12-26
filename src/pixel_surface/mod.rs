@@ -7,14 +7,14 @@ pub trait PixelSurfaceImpl {
     fn cleanup(handle: &mut Self::TextureHandle);
 }
 
-pub struct PixelSurface<Impl : PixelSurfaceImpl> {
+pub struct PixelSurfaceHolder<Impl : PixelSurfaceImpl> {
     handle: Impl::TextureHandle,
-    width: u16,
-    height: u16,
+    pub width: u16,
+    pub height: u16,
     pub bytes: Vec<u32>
 }
 
-impl<Impl : PixelSurfaceImpl> PixelSurface<Impl> {
+impl<Impl : PixelSurfaceImpl> PixelSurfaceHolder<Impl> {
     pub fn create(width: u16, height: u16) -> Self {
         let len = width as usize * height as usize;
         let mut bytes = Vec::with_capacity(len);
@@ -25,12 +25,6 @@ impl<Impl : PixelSurfaceImpl> PixelSurface<Impl> {
             height,
             bytes
         }
-    }
-    pub fn get_width(&self) -> u16 {
-        self.width
-    }
-    pub fn get_height(&self) -> u16 {
-        self.height
     }
     pub fn actualize_buffer(&mut self) {
         Impl::stream(&mut self.handle, &self.bytes)
