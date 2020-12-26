@@ -118,7 +118,6 @@ pub trait PixelWindowHandler: 'static {
     fn on_mouse_button_pressed(&mut self, button_id: u16);
     fn on_mouse_button_released(&mut self, button_id: u16);
     fn on_window_closed(&mut self);
-    fn cleanup(&mut self);
 }
 
 pub struct WindowParameters {
@@ -126,7 +125,20 @@ pub struct WindowParameters {
     pub window_width: u16,
     pub window_height: u16,
     pub scale_up: u16,
-    pub fullscreen: bool
+    pub fullscreen: bool,
+    pub cursor_visible: bool
+}
+impl Default for WindowParameters {
+    fn default() -> Self {
+        Self {
+            title: "Default Title",
+            window_width: 1024,
+            window_height: 768,
+            scale_up: 1,
+            fullscreen: false,
+            cursor_visible: true
+        }
+    }
 }
 
 #[cfg(not(feature = "use-wgpu"))]

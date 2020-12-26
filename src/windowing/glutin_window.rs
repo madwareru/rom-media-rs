@@ -78,6 +78,7 @@ pub fn start_pixel_window<W: PixelWindowHandler>(window_params: WindowParameters
 
     let windowed_context = crate::graphics::init(windowed_context);
     let mut scale_factor = windowed_context.window().scale_factor();
+    windowed_context.window().set_cursor_visible(window_params.cursor_visible);
 
     let mut win = W::create(&window_params);
 
@@ -86,7 +87,6 @@ pub fn start_pixel_window<W: PixelWindowHandler>(window_params: WindowParameters
         match event {
             Event::LoopDestroyed => {
                 win.on_window_closed();
-                win.cleanup();
                 return
             },
             Event::WindowEvent { event, .. } => match event {

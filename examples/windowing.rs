@@ -157,10 +157,6 @@ impl PixelWindowHandler for Window {
         println!("median: {}", median);
         println!("average: {}", average);
     }
-
-    fn cleanup(&mut self) {
-        self.surface.cleanup();
-    }
 }
 fn main() {
     start_pixel_window::<Window>(
@@ -169,7 +165,8 @@ fn main() {
             window_width: 320,
             window_height: 180,
             fullscreen: true,
-            scale_up: 4
+            scale_up: 4,
+            cursor_visible: false
         }
     );
 }

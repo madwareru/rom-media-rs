@@ -32,7 +32,10 @@ impl<Impl : PixelSurfaceImpl> PixelSurfaceHolder<Impl> {
     pub fn draw(&self, x: f32, y: f32, scale_x: f32, scale_y: f32) {
         Impl::draw(&self.handle, x, y, scale_x, scale_y)
     }
-    pub fn cleanup(&mut self) {
+}
+
+impl<Impl : PixelSurfaceImpl> Drop for PixelSurfaceHolder<Impl> {
+    fn drop(&mut self) {
         Impl::cleanup(&mut self.handle)
     }
 }
