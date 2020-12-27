@@ -48,10 +48,9 @@ impl PixelWindowHandler for Window {
         }
     }
     fn prerender(&mut self) {
-        let buffer = &mut self.surface.bytes;
-
-        let w = self.surface.width as usize;
-        let h = self.surface.height as usize;
+        let buffer = &mut self.surface.borrow_buffer();
+        let w = buffer.width();
+        let h = buffer.height();
 
         for entry in buffer.iter_mut() {
             *entry = 0xFF777777;
@@ -95,8 +94,6 @@ impl PixelWindowHandler for Window {
 
         self.bench_results[self.cur_bench] = inst.elapsed().as_micros() as f32 / 1000.0;
         self.cur_bench = (self.cur_bench + 1) % 1024;
-
-        self.surface.actualize_buffer();
     }
 
     fn render(&mut self) {

@@ -1,3 +1,4 @@
+use std::ops::{Deref, DerefMut};
 
 pub trait PixelSurfaceImpl {
     type TextureHandle;
@@ -9,9 +10,9 @@ pub trait PixelSurfaceImpl {
 
 pub struct PixelSurfaceHolder<Impl : PixelSurfaceImpl> {
     handle: Impl::TextureHandle,
-    pub width: u16,
-    pub height: u16,
-    pub bytes: Vec<u32>
+    width: u16,
+    height: u16,
+    bytes: Vec<u32>
 }
 
 impl<Impl : PixelSurfaceImpl> PixelSurfaceHolder<Impl> {
@@ -26,7 +27,12 @@ impl<Impl : PixelSurfaceImpl> PixelSurfaceHolder<Impl> {
             bytes
         }
     }
-    pub fn actualize_buffer(&mut self) {
+
+    pub fn borrow_buffer(&mut self) -> PixelSurfaceReference<Impl> {
+        PixelSurfaceReference { holder: self }
+    }
+
+    fn actualize_buffer(&mut self) {
         Impl::stream(&mut self.handle, &self.bytes)
     }
     pub fn draw(&self, x: f32, y: f32, scale_x: f32, scale_y: f32) {
@@ -37,5 +43,38 @@ impl<Impl : PixelSurfaceImpl> PixelSurfaceHolder<Impl> {
 impl<Impl : PixelSurfaceImpl> Drop for PixelSurfaceHolder<Impl> {
     fn drop(&mut self) {
         Impl::cleanup(&mut self.handle)
+    }
+}
+
+pub struct PixelSurfaceReference<'a, Impl: PixelSurfaceImpl> {
+    holder: &'a mut PixelSurfaceHolder<Impl>
+}
+
+impl<'a, Impl: PixelSurfaceImpl> Deref for PixelSurfaceReference<'a, Impl> {
+    type Target = [u32];
+
+    fn deref(&self) -> &Self::Target {
+        &self.holder.bytes
+    }
+}
+
+impl<'a, Impl: PixelSurfaceImpl> DerefMut for PixelSurfaceReference<'a, Impl> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.holder.bytes
+    }
+}
+
+impl<'a, Impl: PixelSurfaceImpl> Drop for PixelSurfaceReference<'a, Impl> {
+    fn drop(&mut self) {
+        self.holder.actualize_buffer()
+    }
+}
+
+impl<'a, Impl: PixelSurfaceImpl> PixelSurfaceReference<'a, Impl> {
+    pub fn width(&self) -> usize {
+        self.holder.width as usize
+    }
+    pub fn height(&self) -> usize {
+        self.holder.height as usize
     }
 }
