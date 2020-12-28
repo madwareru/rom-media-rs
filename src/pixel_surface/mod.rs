@@ -28,13 +28,14 @@ impl<Impl : PixelSurfaceImpl> PixelSurfaceHolder<Impl> {
         }
     }
 
-    pub fn borrow_buffer(&mut self) -> PixelSurfaceReference<Impl> {
-        PixelSurfaceReference { holder: self }
+    pub fn get_buffer_mut(&mut self) -> PixelSurfaceMutableReference<Impl> {
+        PixelSurfaceMutableReference { holder: self }
     }
 
-    fn actualize_buffer(&mut self) {
-        Impl::stream(&mut self.handle, &self.bytes)
+    pub fn get_buffer(&mut self) -> PixelSurfaceImmutableReference<Impl> {
+        PixelSurfaceImmutableReference { holder: self }
     }
+
     pub fn draw(&self, x: f32, y: f32, scale_x: f32, scale_y: f32) {
         Impl::draw(&self.handle, x, y, scale_x, scale_y)
     }
@@ -46,11 +47,11 @@ impl<Impl : PixelSurfaceImpl> Drop for PixelSurfaceHolder<Impl> {
     }
 }
 
-pub struct PixelSurfaceReference<'a, Impl: PixelSurfaceImpl> {
+pub struct PixelSurfaceMutableReference<'a, Impl: PixelSurfaceImpl> {
     holder: &'a mut PixelSurfaceHolder<Impl>
 }
 
-impl<'a, Impl: PixelSurfaceImpl> Deref for PixelSurfaceReference<'a, Impl> {
+impl<'a, Impl: PixelSurfaceImpl> Deref for PixelSurfaceMutableReference<'a, Impl> {
     type Target = [u32];
 
     fn deref(&self) -> &Self::Target {
@@ -58,19 +59,40 @@ impl<'a, Impl: PixelSurfaceImpl> Deref for PixelSurfaceReference<'a, Impl> {
     }
 }
 
-impl<'a, Impl: PixelSurfaceImpl> DerefMut for PixelSurfaceReference<'a, Impl> {
+impl<'a, Impl: PixelSurfaceImpl> DerefMut for PixelSurfaceMutableReference<'a, Impl> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.holder.bytes
     }
 }
 
-impl<'a, Impl: PixelSurfaceImpl> Drop for PixelSurfaceReference<'a, Impl> {
+impl<'a, Impl: PixelSurfaceImpl> Drop for PixelSurfaceMutableReference<'a, Impl> {
     fn drop(&mut self) {
-        self.holder.actualize_buffer()
+        Impl::stream(&mut self.holder.handle, &self.holder.bytes)
     }
 }
 
-impl<'a, Impl: PixelSurfaceImpl> PixelSurfaceReference<'a, Impl> {
+impl<'a, Impl: PixelSurfaceImpl> PixelSurfaceMutableReference<'a, Impl> {
+    pub fn width(&self) -> usize {
+        self.holder.width as usize
+    }
+    pub fn height(&self) -> usize {
+        self.holder.height as usize
+    }
+}
+
+pub struct PixelSurfaceImmutableReference<'a, Impl: PixelSurfaceImpl> {
+    holder: &'a PixelSurfaceHolder<Impl>
+}
+
+impl<'a, Impl: PixelSurfaceImpl> Deref for PixelSurfaceImmutableReference<'a, Impl> {
+    type Target = [u32];
+
+    fn deref(&self) -> &Self::Target {
+        &self.holder.bytes
+    }
+}
+
+impl<'a, Impl: PixelSurfaceImpl> PixelSurfaceImmutableReference<'a, Impl> {
     pub fn width(&self) -> usize {
         self.holder.width as usize
     }

@@ -48,7 +48,7 @@ impl PixelWindowHandler for Window {
         }
     }
     fn prerender(&mut self) {
-        let buffer = &mut self.surface.borrow_buffer();
+        let buffer = &mut self.surface.get_buffer_mut();
         let w = buffer.width();
         let h = buffer.height();
 

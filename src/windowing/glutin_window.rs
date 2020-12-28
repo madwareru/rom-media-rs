@@ -5,7 +5,6 @@ use glutin::event::{Event, WindowEvent, KeyboardInput, ElementState, MouseButton
 use glutin::ContextBuilder;
 use glutin::dpi::{Size, LogicalSize};
 use std::time::Instant;
-use glutin::monitor::VideoMode;
 
 pub fn start_pixel_window<W: PixelWindowHandler>(window_params: WindowParameters) {
     let scale_up_x = window_params.scale_up.max(1);
