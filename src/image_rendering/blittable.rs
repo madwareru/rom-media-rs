@@ -127,6 +127,7 @@ pub trait Blittable<T> {
     fn blit_impl(&self, buffer: &mut [T], buffer_width: usize, self_rect: Rect, dst_rect: Rect);
     fn get_width(&self) -> usize;
     fn get_height(&self) -> usize;
+    fn components_per_pixel(&self) -> usize;
 }
 
 impl Blittable<u32> for BmpSprite {
@@ -190,5 +191,9 @@ impl Blittable<u32> for BmpSprite {
             BmpSprite::TrueColor { height, .. } => *height,
             BmpSprite::NotSupported => 0
         }
+    }
+
+    fn components_per_pixel(&self) -> usize {
+        1
     }
 }

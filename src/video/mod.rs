@@ -111,6 +111,10 @@ impl Blittable<u32> for SmackerPlayer {
     fn get_height(&self) -> usize {
         self.frame_height as usize
     }
+
+    fn components_per_pixel(&self) -> usize {
+        1
+    }
 }
 
 impl Blittable<u8> for SmackerPlayer {
@@ -135,11 +139,11 @@ impl Blittable<u8> for SmackerPlayer {
         let mut dst_stride = (dst_rect.y_range.start * buffer_width + dst_rect.x_range.start) * 4;
         for _ in 0..span_count {
             match self.brightness {
-                0 => for dest in (&mut buffer[dst_stride..dst_stride + span_length * 4]).iter_mut() {
+                0 => for dest in (&mut buffer[dst_stride * 4..dst_stride * 4 + span_length * 4]).iter_mut() {
                     *dest = 0x00;
                 },
                 255 => {
-                    let mut dst = &mut buffer[dst_stride..dst_stride + span_length * 4];
+                    let mut dst = &mut buffer[dst_stride * 4..dst_stride * 4 + span_length * 4];
                     for src in &ctx.image[src_stride..src_stride + span_length] {
                         let idx = *src;
                         let clr = ctx.palette[idx as usize];
@@ -151,7 +155,7 @@ impl Blittable<u8> for SmackerPlayer {
                     }
                 },
                 _ => {
-                    let mut dst = &mut buffer[dst_stride..dst_stride + span_length * 4];
+                    let mut dst = &mut buffer[dst_stride * 4..dst_stride * 4 + span_length * 4];
                     for src in &ctx.image[src_stride..src_stride + span_length] {
                         let idx = *src;
                         let clr = ctx.palette[idx as usize];
@@ -178,6 +182,10 @@ impl Blittable<u8> for SmackerPlayer {
 
     fn get_height(&self) -> usize {
         self.frame_height as usize
+    }
+
+    fn components_per_pixel(&self) -> usize {
+        4
     }
 }
 
