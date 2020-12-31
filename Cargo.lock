@@ -1008,7 +1008,7 @@ dependencies = [
 
 [[package]]
 name = "rom-media-rs"
-version = "0.6.6"
+version = "0.6.7"
 dependencies = [
  "bumpalo",
  "cpal",
