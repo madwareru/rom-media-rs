@@ -12,7 +12,7 @@ impl ColorKeyedBmp {
     }
 }
 
-impl Blittable for ColorKeyedBmp {
+impl Blittable<u32> for ColorKeyedBmp {
     fn blit_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect) {
         let src_rect = self_rect;
         let dst_rect = dst_rect;

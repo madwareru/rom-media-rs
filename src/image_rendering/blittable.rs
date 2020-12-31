@@ -6,9 +6,9 @@ pub struct Rect {
     pub y_range: Range<usize>
 }
 
-pub struct BlitBuilder<'a, TBlittable: Blittable> {
+pub struct BlitBuilder<'a, T, TBlittable: Blittable<T>> {
     drawable: &'a TBlittable,
-    buffer: &'a mut [u32],
+    buffer: &'a mut [T],
     buffer_width: usize,
     src_x: usize,
     src_y: usize,
@@ -19,8 +19,8 @@ pub struct BlitBuilder<'a, TBlittable: Blittable> {
     dst_width: usize,
     dst_height: usize
 }
-impl<'a, TBlittable: Blittable> BlitBuilder<'a, TBlittable> {
-    pub fn new(buffer: &'a mut [u32], buffer_width: usize, drawable: &'a TBlittable) -> Self {
+impl<'a, T, TBlittable: Blittable<T>> BlitBuilder<'a, T, TBlittable> {
+    pub fn new(buffer: &'a mut [T], buffer_width: usize, drawable: &'a TBlittable) -> Self {
         let dst_height = buffer.len() / buffer_width;
         Self {
             drawable,
@@ -78,11 +78,12 @@ impl<'a, TBlittable: Blittable> BlitBuilder<'a, TBlittable> {
     }
 }
 
-fn blit_ext<TBlittable: Blittable>(drawable: &TBlittable, buffer: &mut [u32], buffer_width: usize,
-                                  src_x: usize, src_y: usize,
-                                  src_width: usize, src_height: usize,
-                                  dst_x: i32, dst_y: i32,
-                                  dst_width: usize, dst_height: usize
+fn blit_ext<T, TBlittable: Blittable<T>>(
+    drawable: &TBlittable, buffer: &mut [T], buffer_width: usize,
+    src_x: usize, src_y: usize,
+    src_width: usize, src_height: usize,
+    dst_x: i32, dst_y: i32,
+    dst_width: usize, dst_height: usize
 ) {
     let src_width_max = (src_width + src_x).min(drawable.get_width());
     let src_height_max = (src_height + src_y).min(drawable.get_height());
@@ -122,13 +123,13 @@ fn blit_ext<TBlittable: Blittable>(drawable: &TBlittable, buffer: &mut [u32], bu
     )
 }
 
-pub trait Blittable {
-    fn blit_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect);
+pub trait Blittable<T> {
+    fn blit_impl(&self, buffer: &mut [T], buffer_width: usize, self_rect: Rect, dst_rect: Rect);
     fn get_width(&self) -> usize;
     fn get_height(&self) -> usize;
 }
 
-impl Blittable for BmpSprite {
+impl Blittable<u32> for BmpSprite {
     fn blit_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect) {
         let src_rect = self_rect;
         let dst_rect = dst_rect;
