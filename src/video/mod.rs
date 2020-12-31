@@ -81,7 +81,7 @@ impl Blittable<u32> for SmackerPlayer {
                         let idx = *src;
                         let clr = ctx.palette[idx as usize];
                         let (r, g, b) = (clr.0 as u32, clr.1 as u32, clr.2 as u32);
-                        *dest = r * 0x1_00_00 | g * 0x1_00 | b;
+                        *dest = b * 0x1_00_00 | g * 0x1_00 | r;
                     }
                 },
                 _ => {
@@ -95,7 +95,7 @@ impl Blittable<u32> for SmackerPlayer {
                         let r = (r * self.brightness as u32) / 255;
                         let g = (g * self.brightness as u32) / 255;
                         let b = (b * self.brightness as u32) / 255;
-                        *dest = r * 0x1_00_00 | g * 0x1_00 | b;
+                        *dest = b * 0x1_00_00 | g * 0x1_00 | r;
                     }
                 }
             }
