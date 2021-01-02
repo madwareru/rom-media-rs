@@ -20,7 +20,7 @@ pub struct BlitBuilder<'a, T, TBlittable: Blittable<T>> {
     dst_height: usize
 }
 impl<'a, T, TBlittable: Blittable<T>> BlitBuilder<'a, T, TBlittable> {
-    pub fn new(buffer: &'a mut [T], buffer_width: usize, drawable: &'a TBlittable) -> Self {
+    pub fn create(buffer: &'a mut [T], buffer_width: usize, drawable: &'a TBlittable) -> Self {
         let dst_height = buffer.len() / buffer_width;
         Self {
             drawable,
@@ -35,6 +35,12 @@ impl<'a, T, TBlittable: Blittable<T>> BlitBuilder<'a, T, TBlittable> {
             dst_width: buffer_width,
             dst_height
         }
+    }
+    pub fn try_create(
+        dest: & 'a mut impl BlitDestination<'a, T, TBlittable>,
+        src: &'a TBlittable
+    ) -> Option<Self> {
+        dest.try_initiate_blit_on_self(src)
     }
     pub fn with_dest_pos(self, dst_x: i32, dst_y: i32) -> Self {
         Self {
@@ -127,7 +133,6 @@ pub trait Blittable<T> {
     fn blit_impl(&self, buffer: &mut [T], buffer_width: usize, self_rect: Rect, dst_rect: Rect);
     fn get_width(&self) -> usize;
     fn get_height(&self) -> usize;
-    fn components_per_pixel(&self) -> usize;
 }
 
 impl Blittable<u32> for BmpSprite {
@@ -192,8 +197,23 @@ impl Blittable<u32> for BmpSprite {
             BmpSprite::NotSupported => 0
         }
     }
+}
 
-    fn components_per_pixel(&self) -> usize {
-        1
+pub trait BlitDestination<'a, T, TBlittable: Blittable<T>> {
+    fn try_initiate_blit_on_self(
+        &'a mut self, source_blittable: &'a TBlittable
+    ) -> Option<BlitBuilder<'a, T, TBlittable>>;
+}
+
+impl<'a, TBlittable: Blittable<u32>> BlitDestination<'a, u32, TBlittable> for BmpSprite {
+    fn try_initiate_blit_on_self(
+        &'a mut self, source_blittable: &'a TBlittable
+    ) -> Option<BlitBuilder<'a, u32, TBlittable>> {
+        match self {
+            BmpSprite::TrueColor { width, colors, .. } => Some(
+                BlitBuilder::create(colors, *width, source_blittable)
+            ),
+            _ => None
+        }
     }
 }

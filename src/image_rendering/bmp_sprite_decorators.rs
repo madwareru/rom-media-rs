@@ -89,8 +89,4 @@ impl Blittable<u32> for ColorKeyedBmp {
     fn get_height(&self) -> usize {
         self.decorated.get_height()
     }
-
-    fn components_per_pixel(&self) -> usize {
-        1
-    }
 }

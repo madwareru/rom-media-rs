@@ -111,10 +111,6 @@ impl Blittable<u32> for SmackerPlayer {
     fn get_height(&self) -> usize {
         self.frame_height as usize
     }
-
-    fn components_per_pixel(&self) -> usize {
-        1
-    }
 }
 
 impl SmackerPlayer {
