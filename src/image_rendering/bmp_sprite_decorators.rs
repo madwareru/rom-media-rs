@@ -98,6 +98,12 @@ impl TrueColorSurfaceSprite {
         buffer.resize(width * height, 0);
         Self(BmpSprite::TrueColor {width, height, colors: buffer })
     }
+    pub fn color_data(&self) -> &[u32] {
+        if let BmpSprite::TrueColor { colors, .. } = &self.0 {
+            return &colors[..];
+        }
+        unreachable!("Something very bad happened")
+    }
 }
 
 impl Blittable<u32> for TrueColorSurfaceSprite {
