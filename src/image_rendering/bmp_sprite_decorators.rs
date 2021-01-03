@@ -1,5 +1,5 @@
 use rom_loaders_rs::images::sprite::BmpSprite;
-use crate::image_rendering::blittable::{Blittable, Rect};
+use crate::image_rendering::blittable::{Blittable, Rect, BlitDestination, BlitBuilder};
 
 pub struct ColorKeyedBmp {
     color_key: u32,
@@ -88,5 +88,36 @@ impl Blittable<u32> for ColorKeyedBmp {
 
     fn get_height(&self) -> usize {
         self.decorated.get_height()
+    }
+}
+
+pub struct TrueColorSurfaceSprite(BmpSprite);
+impl TrueColorSurfaceSprite {
+    pub fn new(width: usize, height: usize) -> Self {
+        let mut buffer = Vec::with_capacity(width * height);
+        buffer.resize(width * height, 0);
+        Self(BmpSprite::TrueColor {width, height, colors: buffer })
+    }
+}
+
+impl Blittable<u32> for TrueColorSurfaceSprite {
+    fn blit_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect) {
+        self.0.blit_impl(buffer, buffer_width, self_rect, dst_rect)
+    }
+
+    fn get_width(&self) -> usize {
+        self.0.get_width()
+    }
+
+    fn get_height(&self) -> usize {
+        self.0.get_height()
+    }
+}
+
+impl<'a, TBlittable: Blittable<u32>> BlitDestination<'a, u32, TBlittable> for TrueColorSurfaceSprite {
+    fn try_initiate_blit_on_self(
+        &'a mut self, source_blittable: &'a TBlittable
+    ) -> Option<BlitBuilder<'a, u32, TBlittable>> {
+        self.0.try_initiate_blit_on_self(source_blittable)
     }
 }
