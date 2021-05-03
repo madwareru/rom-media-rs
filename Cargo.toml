@@ -1,6 +1,6 @@
 [package]
 name = "rom-media-rs"
-version = "0.6.13"
+version = "0.6.14"
 build = "build.rs"
 authors = ["madwareru <madware.ru@gmail.com>"]
 edition = "2018"
@@ -12,7 +12,7 @@ use-wgpu = []
 
 [dependencies]
 cpal= "0.11.0"
-rom-loaders-rs= {git = "https://github.com/madwareru/rom-loaders-rs", version = "0.4.18"}
+rom-loaders-rs= {git = "https://github.com/madwareru/rom-loaders-rs", version = "0.4.19"}
 glutin = "0.26.0"
 
 [dependencies.bumpalo]
