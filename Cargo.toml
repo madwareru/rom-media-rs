@@ -1,23 +1,12 @@
 [package]
 name = "rom-media-rs"
-version = "0.6.18"
-build = "build.rs"
+version = "0.6.19"
 authors = ["madwareru <madware.ru@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[features]
-use-wgpu = []
-
 [dependencies]
 cpal= "0.11.0"
 rom-loaders-rs= {git = "https://github.com/madwareru/rom-loaders-rs", version = "0.4.26"}
 glutin = "0.26.0"
-
-[dependencies.bumpalo]
-version = "3.4.0"
-features = ["collections"]
-
-[build-dependencies]
-gl_generator="0.14.0"
