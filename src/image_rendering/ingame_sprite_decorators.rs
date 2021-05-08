@@ -94,8 +94,9 @@ impl<'a> Blittable<u32> for PalettedSpriteRenderingScope<'a> {
     }
 }
 
-impl<'a> Blittable<u32> for SpriteRenderingScope<'a> {
-    fn blit_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect) {
+/// Implementation for the paletted usage
+impl<'a> Blittable<u16> for SpriteRenderingScope<'a> {
+    fn blit_impl(&self, buffer: &mut [u16], buffer_width: usize, self_rect: Rect, dst_rect: Rect) {
         match self.image_data.image_type {
             ImageType::Dot256 => {
                 const BLANK_LINE: u8 = 0x40;
@@ -151,7 +152,7 @@ impl<'a> Blittable<u32> for SpriteRenderingScope<'a> {
                             dy >= dst_rect.y_range.start as i32 &&
                             dy < dst_rect.y_range.end as i32{
                             let offset = (dx + dy * buffer_width as i32) as usize;
-                            buffer[offset] = palette_id as u32;
+                            buffer[offset] = (palette_id as u16) | 0xFF00;
                         }
                         dx += 1;
                         sx += 1;
