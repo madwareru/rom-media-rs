@@ -109,6 +109,10 @@ impl<'a> Blittable<u32> for PalettedSpriteRenderingScope<'a> {
                         continue;
                     }
                     for _ in 0..chunk_size {
+                        if i >= slice.len() - 1 {
+                            i = slice.len();
+                            break;
+                        }
                         let psh = slice[i] as u16 | ((slice[i+1] as u16) * 0x100); i += 2;
 
                         // we first shift everything one bit right to get palette identifier
@@ -249,6 +253,10 @@ impl<'a> Blittable<u16> for SpriteRenderingScope<'a> {
                         continue;
                     }
                     for _ in 0..chunk_size {
+                        if i >= slice.len() - 1 {
+                            i = slice.len();
+                            break;
+                        }
                         let psh = slice[i] as u16 | ((slice[i+1] as u16) * 0x100); i += 2;
 
                         // we first shift everything one bit right to get palette identifier
