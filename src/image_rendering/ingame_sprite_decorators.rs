@@ -94,8 +94,8 @@ impl<'a> Blittable<u32> for PalettedSpriteRenderingScope<'a> {
                     let ipx1 = slice[i+1];
                     i += 2;
 
-                    let chunk_size = ipx0 & CHUNK_SIZE_BITS as i32;
-                    let chunk_size_2 = ipx1 & CHUNK_SIZE_BITS as i32;
+                    let chunk_size = (ipx0 & CHUNK_SIZE_BITS) as i32;
+                    let chunk_size_2 = (ipx1 & CHUNK_SIZE_BITS) as i32;
                     let is_empty_area_mask = ipx1 & EMPTY_AREA_BITS;
 
                     if is_empty_area_mask > 0 {
@@ -244,8 +244,8 @@ impl<'a> Blittable<u16> for SpriteRenderingScope<'a> {
                     let ipx1 = slice[i+1];
                     i += 2;
 
-                    let chunk_size = ipx0 & CHUNK_SIZE_BITS as i32;
-                    let chunk_size_2 = ipx1 & CHUNK_SIZE_BITS as i32;
+                    let chunk_size = (ipx0 & CHUNK_SIZE_BITS) as i32;
+                    let chunk_size_2 = (ipx1 & CHUNK_SIZE_BITS) as i32;
                     let is_empty_area_mask = ipx1 & EMPTY_AREA_BITS;
 
                     if is_empty_area_mask > 0 {

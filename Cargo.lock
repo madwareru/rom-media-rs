@@ -1002,7 +1002,7 @@ dependencies = [
 
 [[package]]
 name = "rom-media-rs"
-version = "0.6.22"
+version = "0.6.23"
 dependencies = [
  "cpal",
  "glutin",
