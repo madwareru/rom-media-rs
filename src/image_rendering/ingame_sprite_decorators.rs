@@ -234,8 +234,14 @@ impl<'a> Blittable<u16> for SpriteRenderingScope<'a> {
 
                 let mut i = 0;
                 while i < slice.len() {
-                    let chunk_size = (slice[i] & CHUNK_SIZE_BITS) as i32; i += 1;
-                    let is_empty_area_mask = slice[i] & EMPTY_AREA_BITS; i += 1;
+                    let ipx0 = slice[i];
+                    let ipx1 = slice[i+1];
+                    i += 2;
+
+                    let chunk_size = ipx0 & CHUNK_SIZE_BITS as i32;
+                    let chunk_size_2 = ipx1 & CHUNK_SIZE_BITS as i32;
+                    let is_empty_area_mask = ipx1 & EMPTY_AREA_BITS;
+
                     if is_empty_area_mask > 0 {
                         if is_empty_area_mask == BLANK_LINE {
                             dy += chunk_size;
