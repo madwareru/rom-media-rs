@@ -53,8 +53,8 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
 name = "bin-serialization-rs"
-version = "0.1.5"
-source = "git+https://github.com/madwareru/bin-serialization-rs#154a46b926a8fb20b10b2c4fd0aa6b8035918049"
+version = "0.1.6"
+source = "git+https://github.com/madwareru/bin-serialization-rs#8e402f2467bb40fb3e9573617bd02fdd045970f7"
 dependencies = [
  "cp866-rs",
 ]
@@ -990,8 +990,8 @@ checksum = "26412eb97c6b088a6997e05f69403a802a92d520de2f8e63c2b65f9e0f47c4e8"
 
 [[package]]
 name = "rom-loaders-rs"
-version = "0.4.27"
-source = "git+https://github.com/madwareru/rom-loaders-rs#41c5abb250a92074ba9f2696732637d16c61c4fd"
+version = "0.4.28"
+source = "git+https://github.com/madwareru/rom-loaders-rs#c31db87459406700bce43a5829ad5730b10318d0"
 dependencies = [
  "bin-serialization-rs",
  "bitflags",
@@ -1002,7 +1002,7 @@ dependencies = [
 
 [[package]]
 name = "rom-media-rs"
-version = "0.6.24"
+version = "0.6.25"
 dependencies = [
  "cpal",
  "glutin",

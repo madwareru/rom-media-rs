@@ -1,6 +1,6 @@
 [package]
 name = "rom-media-rs"
-version = "0.6.24"
+version = "0.6.25"
 authors = ["madwareru <madware.ru@gmail.com>"]
 edition = "2018"
 
@@ -8,5 +8,5 @@ edition = "2018"
 
 [dependencies]
 cpal= "0.11.0"
-rom-loaders-rs= {git = "https://github.com/madwareru/rom-loaders-rs", version = "0.4.27"}
+rom-loaders-rs= {git = "https://github.com/madwareru/rom-loaders-rs", version = "0.4.28"}
 glutin = "0.26.0"
