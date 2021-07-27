@@ -138,19 +138,37 @@ impl<'a> Blittable<u32> for AlphaBlendedSprite<'a> {
                         let mut src_color = *src;
                         let mut dst_color = *dest;
 
-                        *dest = 0;
+                        let d = (dst_color & 0xFF) as i64; dst_color = dst_color / 0x100;
+                        let s = (src_color & 0xFF) as i64; src_color = src_color / 0x100;
 
-                        for _ in 0..4 {
-                            *dest = *dest * 0x100;
+                        let d_part = d * (self.count - self.amount);
+                        let s_part = s * self.amount;
 
-                            let d = (dst_color & 0xFF) as i64; dst_color = dst_color / 0x100;
-                            let s = (src_color & 0xFF) as i64; src_color = src_color / 0x100;
+                        *dest = ((d_part + s_part) / self.count) as u32;
 
-                            let d_part = d * (self.count - self.amount);
-                            let s_part = s * self.amount;
+                        let d = (dst_color & 0xFF) as i64; dst_color = dst_color / 0x100;
+                        let s = (src_color & 0xFF) as i64; src_color = src_color / 0x100;
 
-                            *dest += ((d_part + s_part) / self.count).max(0).min(255) as u32;
-                        }
+                        let d_part = d * (self.count - self.amount);
+                        let s_part = s * self.amount;
+
+                        *dest += ((d_part + s_part) / self.count) as u32 * 0x100;
+
+                        let d = (dst_color & 0xFF) as i64; dst_color = dst_color / 0x100;
+                        let s = (src_color & 0xFF) as i64; src_color = src_color / 0x100;
+
+                        let d_part = d * (self.count - self.amount);
+                        let s_part = s * self.amount;
+
+                        *dest += ((d_part + s_part) / self.count) as u32 * 0x10000;
+
+                        let d = (dst_color & 0xFF) as i64; dst_color = dst_color / 0x100;
+                        let s = (src_color & 0xFF) as i64; src_color = src_color / 0x100;
+
+                        let d_part = d * (self.count - self.amount);
+                        let s_part = s * self.amount;
+
+                        *dest += ((d_part + s_part) / self.count) as u32 * 0x1000000;
                     }
                     src_stride += *width;
                     dst_stride += buffer_width;
