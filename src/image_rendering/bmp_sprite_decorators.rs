@@ -106,13 +106,13 @@ impl TrueColorSurfaceSprite {
     }
 }
 
-pub struct AlphaBlendedSprite {
-    decorated: TrueColorSurfaceSprite,
+pub struct AlphaBlendedSprite<'a> {
+    decorated: &'a TrueColorSurfaceSprite,
     amount: i64,
     count: i64
 }
 
-impl Blittable<u32> for AlphaBlendedSprite {
+impl<'a> Blittable<u32> for AlphaBlendedSprite<'a> {
     fn blit_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect) {
         let src_rect = self_rect;
         let dst_rect = dst_rect;
