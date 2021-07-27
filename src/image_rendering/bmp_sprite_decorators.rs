@@ -107,9 +107,9 @@ impl TrueColorSurfaceSprite {
 }
 
 pub struct AlphaBlendedSprite<'a> {
-    decorated: &'a TrueColorSurfaceSprite,
-    amount: i64,
-    count: i64
+    pub decorated: &'a TrueColorSurfaceSprite,
+    pub amount: i64,
+    pub count: i64
 }
 
 impl<'a> Blittable<u32> for AlphaBlendedSprite<'a> {
