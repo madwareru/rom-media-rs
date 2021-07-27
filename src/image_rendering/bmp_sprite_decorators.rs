@@ -106,6 +106,67 @@ impl TrueColorSurfaceSprite {
     }
 }
 
+pub struct AlphaBlendedSprite {
+    decorated: TrueColorSurfaceSprite,
+    amount: i64,
+    count: i64
+}
+
+impl Blittable<u32> for AlphaBlendedSprite {
+    fn blit_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect) {
+        let src_rect = self_rect;
+        let dst_rect = dst_rect;
+        let span_length = (
+            src_rect.x_range.end - src_rect.x_range.start
+        ).min(
+            dst_rect.x_range.end - dst_rect.x_range.start
+        );
+        let span_count = (
+            src_rect.y_range.end - src_rect.y_range.start
+        ).min(
+            dst_rect.y_range.end - dst_rect.y_range.start
+        );
+        match &self.decorated.0 {
+            BmpSprite::TrueColor { width, colors, .. } => {
+                let mut src_stride = src_rect.y_range.start * *width + src_rect.x_range.start;
+                let mut dst_stride = dst_rect.y_range.start * buffer_width + dst_rect.x_range.start;
+                for _ in 0..span_count {
+                    let zipped = (&mut buffer[dst_stride..dst_stride+span_length])
+                        .iter_mut()
+                        .zip(&colors[src_stride..src_stride+span_length]);
+                    for (dest, src) in zipped {
+                        let mut src_color = *src;
+                        let mut dst_color = *dest;
+
+                        *dest = 0;
+
+                        for _ in 0..4 {
+                            *dest = *dest * 0x100;
+
+                            let d = (dst_color & 0xFF) as i64; dst_color = dst_color / 0x100;
+                            let s = (src_color & 0xFF) as i64; src_color = src_color / 0x100;
+
+                            *dest += ((d * (self.count - self.amount) + s * self.amount) / self.count) as u32;
+
+                        }
+                    }
+                    src_stride += *width;
+                    dst_stride += buffer_width;
+                }
+            },
+            _ => ()
+        }
+    }
+
+    fn get_width(&self) -> usize {
+        self.decorated.get_width()
+    }
+
+    fn get_height(&self) -> usize {
+        self.decorated.get_height()
+    }
+}
+
 impl Blittable<u32> for TrueColorSurfaceSprite {
     fn blit_impl(&self, buffer: &mut [u32], buffer_width: usize, self_rect: Rect, dst_rect: Rect) {
         self.0.blit_impl(buffer, buffer_width, self_rect, dst_rect)
