@@ -146,8 +146,10 @@ impl<'a> Blittable<u32> for AlphaBlendedSprite<'a> {
                             let d = (dst_color & 0xFF) as i64; dst_color = dst_color / 0x100;
                             let s = (src_color & 0xFF) as i64; src_color = src_color / 0x100;
 
-                            *dest += ((d * (self.count - self.amount) + s * self.amount) / self.count) as u32;
+                            let d_part = d * (self.count - self.amount);
+                            let s_part = s * self.amount;
 
+                            *dest += ((d_part + s_part) / self.count).max(0).min(255) as u32;
                         }
                     }
                     src_stride += *width;
