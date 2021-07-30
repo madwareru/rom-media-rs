@@ -291,8 +291,8 @@ checksum = "26412eb97c6b088a6997e05f69403a802a92d520de2f8e63c2b65f9e0f47c4e8"
 
 [[package]]
 name = "rom-loaders-rs"
-version = "0.4.29"
-source = "git+https://github.com/madwareru/rom-loaders-rs#8a25dfb9c89c8fc31233b206c2c2e4508b934988"
+version = "0.4.30"
+source = "git+https://github.com/madwareru/rom-loaders-rs#619f9746f265d39e7d906f09541429b472853a34"
 dependencies = [
  "bin-serialization-rs",
  "bitflags",
@@ -303,7 +303,7 @@ dependencies = [
 
 [[package]]
 name = "rom-media-rs"
-version = "0.6.33"
+version = "0.6.34"
 dependencies = [
  "cpal",
  "rom-loaders-rs",
